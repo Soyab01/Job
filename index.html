@@ -19,6 +19,38 @@
     .search-container { position: relative; margin-bottom: 20px; }
     #categorySearchInput { width: 100%; padding: 10px 40px 10px 15px; border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box; }
     .search-icon { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: #007bff; }
+    
+    /* Styles for Suggestions */
+    #categorySuggestions {
+        position: absolute;
+        width: 100%;
+        max-height: 200px;
+        overflow-y: auto;
+        background: #fff;
+        border: 1px solid #ddd;
+        border-radius: 0 0 8px 8px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        z-index: 50;
+        display: none; 
+        top: 100%; /* Position below the input */
+    }
+    .suggestion-item {
+        padding: 10px 15px;
+        cursor: pointer;
+        border-bottom: 1px solid #eee;
+        color: #333;
+    }
+    .suggestion-item:last-child {
+        border-bottom: none;
+    }
+    .suggestion-item:hover {
+        background: #e6f7ff;
+        font-weight: 600;
+    }
+    .suggestion-highlight {
+        color: #007bff;
+        font-weight: 700;
+    }
 
     .category-navbar { background: #fff; padding: 8px 0; border-bottom: 1px solid #eee; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
     .category-list { display: flex; overflow-x: auto; list-style: none; padding: 0 10px; margin: 0; scrollbar-width: none; }
@@ -40,6 +72,10 @@
     .job-card { background: #e6f7ff; border: 1px solid #cceeff; padding: 15px; border-radius: 8px; margin-bottom: 10px; border-left: 5px solid #007bff; }
     .job-card p { margin: 5px 0; }
     .job-card strong { color: #007bff; }
+    .job-card .action-buttons { margin-top: 10px; display: flex; gap: 10px; }
+    .job-card .action-buttons button { padding: 8px 12px; border: none; border-radius: 5px; cursor: pointer; font-weight: 600; flex: 1; }
+    .job-card .edit-btn { background: #ffc107; color: #333; }
+    .job-card .delete-btn { background: #dc3545; color: white; }
     
     /* Forms & Form Icons */
     .form-container { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin-top: 15px; }
@@ -56,7 +92,31 @@
     /* Buttons */
     .form-btn { background: #007bff; color: white; padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; width: 100%; margin-top: 10px; font-weight: 600; transition: background 0.3s;}
     .form-btn:hover { background: #0056b3; }
-    #employeeRegisterForm button { background: #28a745; }
+    /* Advanced Button Style for Registration */
+    #employeeRegisterForm button { 
+        background: #28a745; 
+        display: flex; 
+        align-items: center; 
+        justify-content: center; 
+        transition: background 0.3s, transform 0.1s;
+    }
+    #employeeRegisterForm button:active {
+        transform: scale(0.98);
+    }
+    /* Loading Spinner */
+    .loading-spinner { 
+        border: 2px solid #f3f3f3; 
+        border-top: 2px solid #fff; 
+        border-radius: 50%; 
+        width: 16px; 
+        height: 16px; 
+        animation: spin 0.8s linear infinite; 
+        margin-right: 8px; 
+    }
+    @keyframes spin { 
+        0% { transform: rotate(0deg); } 
+        100% { transform: rotate(360deg); } 
+    }
     
     /* Messages */
     .message { margin-top: 10px; padding: 8px; border-radius: 4px; font-weight: bold; }
@@ -79,6 +139,8 @@
     <div class="search-container">
       <input type="text" id="categorySearchInput" placeholder="श्रेणी खोजें...">
       <span class="material-icons search-icon">search</span>
+      <!-- NEW: Category Suggestions Dropdown -->
+      <div id="categorySuggestions"></div>
     </div>
     <div class="category-navbar">
       <ul id="categoryNav" class="category-list">
@@ -130,7 +192,11 @@
             <input type="text" id="emp_contact" inputmode="numeric" placeholder="91XXXXXXXXXX" required>
         </div>
 
-        <button type="submit">पंजीकरण करें</button>
+        <!-- UPDATED BUTTON with icon and ID -->
+        <button type="submit" id="registerEmployeeBtn">
+            <span class="material-icons" id="registerIcon" style="font-size: 18px; vertical-align: middle; margin-right: 5px;">how_to_reg</span>
+            <span id="registerText">पंजीकरण करें</span>
+        </button>
         <p id="empRegisterMessage" class="message success-msg">पंजीकरण सफल! आपका प्रोफ़ाइल होम पेज पर दिखने लगेगा।</p>
     </form>
   </div>
@@ -141,6 +207,8 @@
     <p>किसी भी सेवा कर्मचारी की आवश्यकता के लिए यहाँ पोस्ट करें।</p>
 
     <form id="jobPostForm" class="form-container">
+        <!-- Hidden field to track if we are editing -->
+        <input type="hidden" id="editingPostId" value="">
         
         <label for="post_category">आवश्यक कर्मचारी श्रेणी</label>
         <div class="form-group-icon">
@@ -171,7 +239,7 @@
             <input type="text" id="post_duration" placeholder="जैसे: 4 घंटे के लिए, आज शाम को" required>
         </div>
 
-        <button type="submit" class="form-btn">जॉब रिक्वेस्ट पोस्ट करें</button>
+        <button type="submit" class="form-btn" id="submitJobPostBtn">जॉब रिक्वेस्ट पोस्ट करें</button>
         <p id="postMessage" class="message success-msg">जॉब रिक्वेस्ट सफलतापूर्वक पोस्ट की गई!</p>
     </form>
     
@@ -204,31 +272,32 @@ const STORAGE_KEY = 'serviceApp_admin_data_final';
 const POST_STORAGE_KEY = 'serviceApp_job_posts';
 const EMP_PREFIX = 'EMP_';
 let currentFilter = 'all';
-// Use a constant user contact number for simulating 'My Posts' functionality
-const DEMO_USER_CONTACT = '919876543210'; 
+let userTrackedContact = localStorage.getItem('user_tracked_contact') || ''; // Track the user's contact number
+let categoriesList = []; 
 
 function generateId(prefix=''){return prefix+Date.now().toString(36)+Math.random().toString(36).substr(2,5);}
 
-// इस फंक्शन को एडमिन पैनल द्वारा दी गई व्यापक कैटेगरी लिस्ट को सपोर्ट करने के लिए अपडेट किया गया है।
 function loadData(){
     try {
         const d = localStorage.getItem(STORAGE_KEY);
         const parsedData = d ? JSON.parse(d) : { categories: [], employees: [] };
-        
-        // अगर categories खाली है, तो एक minimal seed डेटा लौटाएँ
         if (!Array.isArray(parsedData.categories) || parsedData.categories.length === 0) {
              console.warn("Categories missing, using minimal seed data.");
-             return seedData(); // Falls back to minimal seed
+             const seed = seedData();
+             categoriesList = seed.categories; 
+             return seed;
         }
+        categoriesList = parsedData.categories; 
         return parsedData;
     } catch (e) {
         console.error("Error loading data, using minimal seed data.", e);
-        return seedData(); 
+        const seed = seedData();
+        categoriesList = seed.categories;
+        return seed;
     }
 }
 
 function seedData(){
-  // Minimal seed data, just in case the admin panel hasn't been run yet.
   const d={
     categories:[
       {id:'cat_plumber',name:'प्लंबर'},
@@ -254,6 +323,10 @@ function savePosts(posts){
     try {localStorage.setItem(POST_STORAGE_KEY, JSON.stringify(posts));} catch (e) {console.error("Post save error:", e);}
 }
 function saveData(data){try {localStorage.setItem(STORAGE_KEY,JSON.stringify(data));}catch (e) {console.error("Employee data save error:",e);}}
+function saveTrackedContact(contact){
+    userTrackedContact = contact;
+    localStorage.setItem('user_tracked_contact', contact);
+}
 
 
 // --- Category Rendering and Filtering ---
@@ -280,6 +353,7 @@ function populateAllCategorySelects(categories) {
         postSelect.appendChild(opt2);
     });
     
+    // Attempt to restore selection
     empSelect.value = currentEmpVal;
     postSelect.value = currentPostVal;
 }
@@ -295,16 +369,24 @@ function renderCategoryNav(data){
   // 'सभी श्रेणियां' link
   const all=document.createElement('li');
   all.className='category-item';
-  all.innerHTML=`<a href="javascript:void(0)" class="category-link ${currentFilter==='all'?'active':''}" data-category-id="all">सभी श्रेणियां</a>`;
-  all.querySelector('a').onclick=(e)=>{e.preventDefault(); setFilter('all');};
+  all.innerHTML=`<a href="javascript:void(0)" class="category-link ${currentFilter==='all'?'active':''}" data-category-id="all" data-category-name="सभी श्रेणियां">सभी श्रेणियां</a>`;
+  all.querySelector('a').onclick=(e)=>{
+      e.preventDefault(); 
+      setFilter('all');
+      document.getElementById('categorySearchInput').value = 'सभी श्रेणियां'; // Set input value
+  };
   nav.appendChild(all);
 
   // Individual categories
   data.categories.forEach(c=>{
     const li=document.createElement('li');
     li.className='category-item';
-    li.innerHTML=`<a href="javascript:void(0)" class="category-link ${currentFilter===c.id?'active':''}" data-category-id="${c.id}">${c.name}</a>`;
-    li.querySelector('a').onclick=(e)=>{e.preventDefault(); setFilter(c.id);};
+    li.innerHTML=`<a href="javascript:void(0)" class="category-link ${currentFilter===c.id?'active':''}" data-category-id="${c.id}" data-category-name="${c.name}">${c.name}</a>`;
+    li.querySelector('a').onclick=(e)=>{
+        e.preventDefault(); 
+        setFilter(c.id);
+        document.getElementById('categorySearchInput').value = c.name; // Set input value
+    };
     nav.appendChild(li);
   });
 }
@@ -313,6 +395,16 @@ function setFilter(id){
   currentFilter=id;const d=loadData();
   renderEmployees(d,id);
   
+  // Update the active filter text in search input if switching from an unknown category to 'all'
+  if (id === 'all') {
+    document.getElementById('categorySearchInput').value = '';
+  } else {
+    const cat = categoriesList.find(c => c.id === id);
+    if (cat) {
+        document.getElementById('categorySearchInput').value = cat.name;
+    }
+  }
+
   // Highlight the active category link and scroll it into view
   document.querySelectorAll('.category-link').forEach(l=>{
     const isActive = l.dataset.categoryId===id;
@@ -349,7 +441,94 @@ function renderEmployees(data,filter){
   });
 }
 
-// --- Available Jobs Handlers (New) ---
+// --- Search and Suggestions Logic (UPDATED) ---
+
+function renderSuggestions(query) {
+    const suggestionsBox = document.getElementById('categorySuggestions');
+    suggestionsBox.innerHTML = '';
+    const categories = categoriesList;
+    const lowerQuery = query.toLowerCase().trim();
+
+    // Add 'सभी श्रेणियां' option if query is empty
+    if (query.length === 0) {
+        suggestionsBox.innerHTML += `<div class="suggestion-item" data-category-id="all" data-category-name="सभी श्रेणियां">सभी श्रेणियां</div>`;
+    }
+    
+    // Filter and display categories
+    const filtered = categories.filter(cat => cat.name.toLowerCase().includes(lowerQuery));
+
+    if (filtered.length === 0 && query.length > 0) {
+        suggestionsBox.style.display = 'none';
+        return;
+    }
+
+    filtered.forEach(cat => {
+        const startIndex = cat.name.toLowerCase().indexOf(lowerQuery);
+        const endIndex = startIndex + lowerQuery.length;
+        const highlightedName = 
+            cat.name.substring(0, startIndex) +
+            `<span class="suggestion-highlight">${cat.name.substring(startIndex, endIndex)}</span>` +
+            cat.name.substring(endIndex);
+
+        suggestionsBox.innerHTML += `<div class="suggestion-item" data-category-id="${cat.id}" data-category-name="${cat.name}">${highlightedName}</div>`;
+    });
+
+    suggestionsBox.style.display = 'block';
+
+    suggestionsBox.querySelectorAll('.suggestion-item').forEach(item => {
+        item.addEventListener('mousedown', function() { 
+            const id = this.dataset.categoryId;
+            const name = this.dataset.categoryName;
+            selectCategory(id, name);
+        });
+    });
+}
+
+function selectCategory(categoryId, categoryName) {
+    // UPDATED: Ensure input and suggestions are handled correctly
+    document.getElementById('categorySearchInput').value = categoryName; 
+    document.getElementById('categorySuggestions').style.display = 'none'; 
+    setFilter(categoryId); // This is where the filtering happens
+}
+
+function setupCategorySearch() {
+    const input = document.getElementById('categorySearchInput');
+    const suggestionsBox = document.getElementById('categorySuggestions');
+    
+    input.addEventListener('input', () => {
+        renderSuggestions(input.value);
+    });
+
+    input.addEventListener('focus', () => {
+        renderSuggestions(input.value);
+    });
+
+    input.addEventListener('blur', () => {
+        setTimeout(() => {
+            suggestionsBox.style.display = 'none';
+        }, 150); 
+    });
+    
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            const firstSuggestion = suggestionsBox.querySelector('.suggestion-item');
+            if (firstSuggestion && suggestionsBox.style.display === 'block') {
+                e.preventDefault(); 
+                const id = firstSuggestion.dataset.categoryId;
+                const name = firstSuggestion.dataset.categoryName;
+                selectCategory(id, name);
+            } else if (input.value.trim() !== '') {
+                const exactMatch = categoriesList.find(c => c.name.toLowerCase() === input.value.trim().toLowerCase());
+                if (exactMatch) {
+                    selectCategory(exactMatch.id, exactMatch.name);
+                }
+            }
+        }
+    });
+}
+
+
+// --- Available Jobs Handlers ---
 
 function renderAvailableJobs(categories) { 
     const posts = loadPosts();
@@ -366,7 +545,6 @@ function renderAvailableJobs(categories) {
         const cat = categories.find(c => c.id === p.category);
         const catName = cat ? cat.name : 'अज्ञात';
         
-        // WhatsApp link to contact the user who posted the job
         const wLink = `https://wa.me/91${p.contactNumber}?text=${encodeURIComponent(`नमस्ते, मैंने आपकी ${catName} सेवा की जॉब पोस्ट देखी है। क्या यह काम अभी भी उपलब्ध है? मेरा संपर्क नंबर ${p.contactNumber} है।`)}`;
         
         container.innerHTML += `
@@ -376,7 +554,7 @@ function renderAvailableJobs(categories) {
                 <p><strong>आवश्यकता:</strong> ${p.duration}</p>
                 <p><strong>संपर्क नाम:</strong> ${p.contactName}</p>
                 <div class="contact-buttons" style="margin-top:5px;">
-                     <a href="tel:+91${p.contactNumber}" class="call-btn" style="flex:auto;">कॉल करें (${p.contactNumber})</a>
+                     <a href="tel:+91${p.contactNumber}" class="call-btn" style="flex:auto;">कॉल करें</a>
                      <a href="${wLink}" target="_blank" class="whatsapp-btn" style="flex:auto;">व्हाट्सएप करें</a>
                 </div>
             </div>
@@ -384,63 +562,120 @@ function renderAvailableJobs(categories) {
     });
 }
 
-// --- My Posts / Job Request Handlers (New) ---
+// --- My Posts / Job Request Handlers ---
+
+function resetJobPostForm(categories, isUpdate=false) {
+    document.getElementById('jobPostForm').reset();
+    
+    // NEW: Pre-fill contact number if one is tracked
+    if (userTrackedContact) {
+        document.getElementById('post_contact_number').value = userTrackedContact; 
+    }
+    
+    editingPostId = null;
+    document.getElementById('editingPostId').value = '';
+    
+    const btn = document.getElementById('submitJobPostBtn');
+    btn.textContent = 'जॉब रिक्वेस्ट पोस्ट करें';
+    btn.style.background = '#007bff';
+    populateAllCategorySelects(categories); 
+
+    if(!isUpdate) document.getElementById('postMessage').style.display = 'none';
+}
 
 function handleJobPost(e) {
     e.preventDefault();
     
     const postForm = document.getElementById('jobPostForm');
+    const id = document.getElementById('editingPostId').value || null;
     const category = document.getElementById('post_category').value;
     const details = postForm.querySelector('textarea#post_work_details').value.trim();
     const contactName = document.getElementById('post_contact_name').value.trim();
     const contactNumber = document.getElementById('post_contact_number').value.trim().replace(/\D/g, ''); // Clean contact
     const duration = document.getElementById('post_duration').value.trim();
     
+    const btn = document.getElementById('submitJobPostBtn');
+    const originalText = btn.textContent;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loading-spinner"></span> <span>प्रसंस्करण...</span>';
+
+
     if (!category || !details || !contactName || contactNumber.length < 10 || !duration) {
         alert('कृपया सभी फ़ील्ड सही ढंग से भरें।');
+        btn.disabled = false;
+        btn.innerHTML = originalText;
         return;
     }
     
-    const newPost = {
-        id: generateId('POST_'),
-        category: category,
-        details: details,
-        contactName: contactName,
-        contactNumber: contactNumber,
-        duration: duration,
-        timestamp: Date.now()
-    };
-    
     let posts = loadPosts();
-    posts.push(newPost);
-    savePosts(posts);
 
+    if (id) {
+        // Handle Edit/Update
+        const index = posts.findIndex(p => p.id === id);
+        if (index !== -1) {
+            posts[index] = {
+                ...posts[index], 
+                category: category,
+                details: details,
+                contactName: contactName,
+                contactNumber: contactNumber,
+                duration: duration
+            };
+            document.getElementById('postMessage').textContent = 'जॉब रिक्वेस्ट सफलतापूर्वक अपडेट की गई!';
+            document.getElementById('postMessage').classList.remove('success-msg');
+            document.getElementById('postMessage').classList.add('success-msg'); 
+        }
+    } else {
+        // Handle New Post
+        const newPost = {
+            id: generateId('POST_'),
+            category: category,
+            details: details,
+            contactName: contactName,
+            contactNumber: contactNumber,
+            duration: duration,
+            timestamp: Date.now()
+        };
+        posts.push(newPost);
+        document.getElementById('postMessage').textContent = 'जॉब रिक्वेस्ट सफलतापूर्वक पोस्ट की गई!';
+    }
+    
+    savePosts(posts);
+    saveTrackedContact(contactNumber); // Save the contact number for tracking
+    
     const postMsg = document.getElementById('postMessage');
     postMsg.style.display = 'block';
     
-    // Reset form after successful submission
-    postForm.reset();
-
     // Re-render user's own posts immediately
     renderMyPosts(loadData().categories);
-
+    resetJobPostForm(loadData().categories, true); // Reset form and remove editing state
+    
+    btn.disabled = false;
+    btn.innerHTML = originalText;
+    
     // Hide message after a delay
     setTimeout(() => { 
         postMsg.style.display = 'none';
-        // Suggest switching to available jobs to see the post (optional)
+        if (document.getElementById('availableJobsSection').classList.contains('active')) {
+             renderAvailableJobs(loadData().categories);
+        }
     }, 3000);
 }
 
 
 function renderMyPosts(categories) { 
-     // For this demo, we'll assume a dummy contact number to identify 'My Posts'
-     const myPosts = loadPosts().filter(p => p.contactNumber === '9123456789' || p.contactNumber === DEMO_USER_CONTACT); 
+     // Filter using the dynamically tracked contact number
+     const myPosts = loadPosts().filter(p => p.contactNumber === userTrackedContact); 
      document.getElementById('myPostCount').textContent = myPosts.length;
      const container = document.getElementById('myPostsContainer');
      container.innerHTML = '';
      
-     if (myPosts.length === 0) {
+     if (!userTrackedContact || myPosts.length === 0) {
           container.innerHTML = `<p style="text-align: center; color: #555;">आपकी कोई जॉब रिक्वेस्ट पोस्ट नहीं की गई है।</p>`;
+          // If no posts are found, but a contact is tracked, suggest posting
+          if (userTrackedContact) {
+             container.innerHTML += `<p style="text-align: center; color: #007bff; font-weight: 600;">ऊपर दिए गए फॉर्म में जॉब रिक्वेस्ट पोस्ट करें।</p>`;
+          }
           return;
      }
 
@@ -449,31 +684,99 @@ function renderMyPosts(categories) {
         const catName = cat ? cat.name : 'अज्ञात';
         
         container.innerHTML += `
-            <div class="job-card">
+            <div class="job-card" id="my-post-${p.id}">
                 <p><strong>श्रेणी:</strong> ${catName}</p>
                 <p><strong>विवरण:</strong> ${p.details}</p>
                 <p><strong>आवश्यकता:</strong> ${p.duration}</p>
+                <div class="action-buttons">
+                    <button class="edit-btn" onclick="editPost('${p.id}')">एडिट करें</button>
+                    <button class="delete-btn" onclick="deletePost('${p.id}')">डिलीट करें</button>
+                </div>
             </div>
         `;
     });
 }
 
+function deletePost(postId) {
+    if (confirm('क्या आप सच में यह पोस्ट हटाना चाहते हैं?')) {
+        let posts = loadPosts();
+        posts = posts.filter(p => p.id !== postId);
+        savePosts(posts);
+        const categories = loadData().categories;
+        renderMyPosts(categories); 
+        
+        if (editingPostId === postId) {
+            resetJobPostForm(categories);
+        }
+        renderAvailableJobs(categories); 
+    }
+}
 
-// --- Employee Registration Handler ---
+function editPost(postId) {
+    const post = loadPosts().find(p => p.id === postId);
+    if (!post) return alert('पोस्ट नहीं मिली।');
+
+    editingPostId = postId;
+    document.getElementById('editingPostId').value = postId;
+
+    // Pre-fill the form
+    document.getElementById('post_category').value = post.category;
+    document.getElementById('post_work_details').value = post.details;
+    document.getElementById('post_contact_name').value = post.contactName;
+    document.getElementById('post_contact_number').value = post.contactNumber;
+    document.getElementById('post_duration').value = post.duration;
+
+    // Update button text and style
+    const btn = document.getElementById('submitJobPostBtn');
+    btn.textContent = 'पोस्ट अपडेट करें';
+    btn.style.background = '#ffc107'; 
+
+    // Scroll to the form
+    window.scrollTo({ top: document.getElementById('jobPostForm').offsetTop - 20, behavior: 'smooth' });
+}
+
+
+// --- Employee Registration Handler (UPDATED Button Animation) ---
 function handleEmployeeRegistration(e) {
     e.preventDefault();
     
+    const btn = document.getElementById('registerEmployeeBtn');
+    const registerIcon = document.getElementById('registerIcon');
+    const registerText = document.getElementById('registerText');
+    const originalIcon = 'how_to_reg';
+    const originalText = 'पंजीकरण करें';
+
+    // Show loading state
+    btn.disabled = true;
+    registerIcon.className = 'loading-spinner'; // Replace icon with spinner
+    registerIcon.style.marginRight = '8px';
+    registerText.textContent = 'पंजीकरण हो रहा है...';
+
     const name = document.getElementById('emp_name').value.trim();
     const categoryId = document.getElementById('emp_category').value; 
     const exp = parseInt(document.getElementById('emp_exp').value);
-    const contact = document.getElementById('emp_contact').value.trim().replace(/\D/g, ''); // Clean contact
+    const contact = document.getElementById('emp_contact').value.trim().replace(/\D/g, ''); 
 
     if (!name || categoryId === "" || isNaN(exp) || contact.length < 10) {
         alert('कृपया सभी आवश्यक जानकारी सही ढंग से भरें।'); 
+        btn.disabled = false;
+        registerIcon.className = 'material-icons';
+        registerIcon.textContent = originalIcon;
+        registerText.textContent = originalText;
         return;
     }
 
     let data = loadData();
+    
+    if (data.employees.some(emp => emp.contact === contact)) {
+        alert('यह संपर्क नंबर पहले से ही पंजीकृत है।');
+        btn.disabled = false;
+        registerIcon.className = 'material-icons';
+        registerIcon.textContent = originalIcon;
+        registerText.textContent = originalText;
+        return;
+    }
+
     const newEmployee = {
         id: generateId(EMP_PREFIX), 
         categoryId: categoryId, 
@@ -481,25 +784,27 @@ function handleEmployeeRegistration(e) {
         experience: exp, 
         contact: contact
     };
-    
-    if (data.employees.some(emp => emp.contact === contact)) {
-        alert('यह संपर्क नंबर पहले से ही पंजीकृत है।');
-        return;
-    }
 
     data.employees.push(newEmployee);
-    saveData(data); // Saves to the shared STORAGE_KEY
+    saveData(data); 
 
-    const registerMsg = document.getElementById('empRegisterMessage');
-    registerMsg.style.display = 'block';
-    
+    // Show success state (briefly)
+    registerIcon.className = 'material-icons';
+    registerIcon.textContent = 'done_all'; 
+    registerText.textContent = 'सफल!';
+    btn.style.background = '#155724'; // Darker green for success
+
     document.getElementById('employeeRegisterForm').reset();
     
-    // Switch to Home and set filter to show the new employee
     setTimeout(() => { 
+        // Reset button and switch section
+        btn.disabled = false;
+        btn.style.background = '#28a745'; // Back to original green
+        registerIcon.textContent = originalIcon;
+        registerText.textContent = originalText;
+
         switchSection('homeSection'); 
         setFilter(categoryId); 
-        registerMsg.style.display = 'none';
     }, 3000);
 }
 
@@ -517,19 +822,25 @@ function switchSection(targetSectionId){
 
     // 2. Section Specific Logic
     if (targetSectionId === 'homeSection') {
-         currentFilter = 'all'; 
-         document.getElementById('categorySearchInput').value = '';
-         // Render the Nav and Grid on return
+         // Reset search input on home switch if filter is 'all'
+         if (currentFilter === 'all') {
+             document.getElementById('categorySearchInput').value = ''; 
+         }
+         document.getElementById('categorySuggestions').style.display = 'none';
+         
+         if (!currentFilter) currentFilter = 'all';
          renderCategoryNav(data); 
-         setFilter('all'); 
+         setFilter(currentFilter); // Re-render employees based on current filter
          
     } else if (targetSectionId === 'availableJobsSection') {
          renderAvailableJobs(categories);
     } else if (targetSectionId === 'profileSection') { 
-         populateAllCategorySelects(categories); // for jobPostForm select
-         renderMyPosts(categories); // show users own posts
+         populateAllCategorySelects(categories); 
+         renderMyPosts(categories); 
+         // Pre-fill contact number/reset form
+         resetJobPostForm(categories); 
     } else if (targetSectionId === 'employeeRegisterSection') { 
-         populateAllCategorySelects(categories); // Populate the dropdown for registration
+         populateAllCategorySelects(categories); 
     }
 
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -539,7 +850,8 @@ function switchSection(targetSectionId){
 // --- Initialization ---
 
 document.addEventListener('DOMContentLoaded', () => {
-     // Attach all dynamic listeners
+     loadData();
+     
      document.getElementById('employeeRegisterForm').addEventListener('submit', handleEmployeeRegistration);
      document.getElementById('jobPostForm').addEventListener('submit', handleJobPost);
     
@@ -550,7 +862,8 @@ document.addEventListener('DOMContentLoaded', () => {
          });
      });
      
-     // Initial load: Go to home and render all
+     setupCategorySearch();
+     
      switchSection('homeSection');
 });
 </script>
