@@ -85,7 +85,7 @@
         width: 100%; padding: 10px 10px 10px 40px; border-radius: 5px; border: 1px solid #ccc;
         box-sizing: border-box; transition: border-color 0.3s; 
     }
-    textarea { padding-left: 10px !important; } /* Override icon padding for textarea */
+    textarea { padding-left: 10px !important; } 
     #employeeRegisterSection input, #employeeRegisterSection select { padding-left: 40px; }
     select { -webkit-appearance: none; -moz-appearance: none; appearance: none; padding-right: 10px; }
     
@@ -93,40 +93,37 @@
     .form-btn { background: #007bff; color: white; padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; width: 100%; margin-top: 10px; font-weight: 600; transition: background 0.3s;}
     .form-btn:hover { background: #0056b3; }
     
-    /* Advanced Button Style for Registration (IMPROVED) */
+    /* Advanced Button Style for Registration */
     #employeeRegisterForm button { 
-        /* Base Styling */
-        background: linear-gradient(135deg, #28a745, #1e8736); /* Subtle Gradient */
+        background: linear-gradient(135deg, #28a745, #1e8736); 
         color: white;
-        padding: 12px 15px; /* Slightly taller */
+        padding: 12px 15px; 
         border: none;
-        border-radius: 8px; /* Slightly larger border-radius */
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0, 0, 0, 0.08); /* 3D Shadow */
+        border-radius: 8px; 
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0, 0, 0, 0.08); 
         cursor: pointer; 
         width: 100%; 
         margin-top: 15px; 
-        font-weight: 700; /* Bolder text */
-        text-transform: uppercase; /* Slightly more professional */
+        font-weight: 700; 
+        text-transform: uppercase; 
         letter-spacing: 0.5px;
         transition: all 0.2s ease;
-        
-        /* Flex for alignment */
         display: flex; 
         align-items: center; 
         justify-content: center; 
     }
     #employeeRegisterForm button:hover {
-        background: linear-gradient(135deg, #1e8736, #156d2b); /* Darker on hover */
-        box-shadow: 0 6px 10px rgba(0, 0, 0, 0.2), 0 2px 4px rgba(0, 0, 0, 0.1); /* Lift up effect */
+        background: linear-gradient(135deg, #1e8736, #156d2b); 
+        box-shadow: 0 6px 10px rgba(0, 0, 0, 0.2), 0 2px 4px rgba(0, 0, 0, 0.1); 
     }
     #employeeRegisterForm button:active {
-        transform: translateY(2px); /* Press down effect */
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Reduce shadow */
+        transform: translateY(2px); 
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); 
     }
     
     /* Success State for Button */
-    #employeeRegisterForm button[style*="background: rgb(21, 87, 36)"] { /* Matches the success state color in JS */
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15); /* Keep shadow for success */
+    #employeeRegisterForm button[style*="background: rgb(21, 87, 36)"] { 
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15); 
         transform: none;
     }
 
@@ -149,6 +146,11 @@
     .message { margin-top: 10px; padding: 8px; border-radius: 4px; font-weight: bold; }
     .success-msg { color: #155724; background-color: #d4edda; border: 1px solid #c3e6cb; display: none; }
     
+    /* Disabled Input Style */
+    #emp_new_category:disabled {
+        background-color: #e9ecef;
+        cursor: not-allowed;
+    }
 
     /* Bottom Nav */
     .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; display: flex; justify-content: space-around; background: #fff; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); z-index: 10; }
@@ -166,7 +168,6 @@
     <div class="search-container">
       <input type="text" id="categorySearchInput" placeholder="श्रेणी खोजें...">
       <span class="material-icons search-icon">search</span>
-      <!-- NEW: Category Suggestions Dropdown -->
       <div id="categorySuggestions"></div>
     </div>
     <div class="category-navbar">
@@ -199,12 +200,19 @@
             <input type="text" id="emp_name" placeholder="जैसे: मोहन लाल" required>
         </div>
         
-        <label for="emp_category">आपकी विशेषज्ञता (श्रेणी)</label>
+        <label for="emp_category">आपकी विशेषज्ञता (श्रेणी चुनें)</label>
         <div class="form-group-icon">
             <span class="material-icons">engineering</span>
             <select id="emp_category" required>
                  <option value="">-- श्रेणी चुनें --</option>
             </select>
+        </div>
+
+        <!-- New Category Input -->
+        <label for="emp_new_category">अन्य: नई श्रेणी जोड़ें</label>
+        <div class="form-group-icon">
+            <span class="material-icons">add_box</span>
+            <input type="text" id="emp_new_category" placeholder="जैसे: कार वॉश एक्सपर्ट" oninput="toggleCategorySelect(this.value)">
         </div>
 
         <label for="emp_exp">अनुभव (वर्षों में)</label>
@@ -219,7 +227,6 @@
             <input type="text" id="emp_contact" inputmode="numeric" placeholder="91XXXXXXXXXX" required>
         </div>
 
-        <!-- UPDATED BUTTON with icon and ID -->
         <button type="submit" id="registerEmployeeBtn">
             <span class="material-icons" id="registerIcon" style="font-size: 18px; vertical-align: middle; margin-right: 5px;">how_to_reg</span>
             <span id="registerText">पंजीकरण करें</span>
@@ -298,8 +305,9 @@
 const STORAGE_KEY = 'serviceApp_admin_data_final';
 const POST_STORAGE_KEY = 'serviceApp_job_posts';
 const EMP_PREFIX = 'EMP_';
+const CAT_PREFIX = 'cat_custom_'; 
 let currentFilter = 'all';
-let userTrackedContact = localStorage.getItem('user_tracked_contact') || ''; // Track the user's contact number
+let userTrackedContact = localStorage.getItem('user_tracked_contact') || ''; 
 let categoriesList = []; 
 
 function generateId(prefix=''){return prefix+Date.now().toString(36)+Math.random().toString(36).substr(2,5);}
@@ -309,7 +317,6 @@ function loadData(){
         const d = localStorage.getItem(STORAGE_KEY);
         const parsedData = d ? JSON.parse(d) : { categories: [], employees: [] };
         if (!Array.isArray(parsedData.categories) || parsedData.categories.length === 0) {
-             console.warn("Categories missing, using minimal seed data.");
              const seed = seedData();
              categoriesList = seed.categories; 
              return seed;
@@ -317,7 +324,6 @@ function loadData(){
         categoriesList = parsedData.categories; 
         return parsedData;
     } catch (e) {
-        console.error("Error loading data, using minimal seed data.", e);
         const seed = seedData();
         categoriesList = seed.categories;
         return seed;
@@ -331,11 +337,43 @@ function seedData(){
       {id:'cat_electrician',name:'इलेक्ट्रीशियन'},
       {id:'cat_carpenter',name:'बढ़ई'},
       {id:'cat_cleaner',name:'सफाई कर्मचारी'},
-      {id:'cat_gardener',name:'माली'}
+      {id:'cat_gardener',name:'माली'},
+      {id:'cat_painter',name:'पेंटर'},
+      {id:'cat_ac_repair',name:'एसी रिपेयर'},
+      {id:'cat_home_tutor',name:'होम ट्यूटर'},
+      {id:'cat_cook',name:'खाना बनाने वाला'},
+      {id:'cat_driver',name:'ड्राइवर'},
+      {id:'cat_security',name:'सुरक्षा गार्ड'},
+      {id:'cat_delivery',name:'डिलीवरी बॉय/गर्ल'},
+      {id:'cat_laundry',name:'कपड़े धोने वाला'},
+      {id:'cat_pest_control',name:'पेस्ट कंट्रोल'},
+      // -- NEW CATEGORIES ADDED BELOW --
+      {id:'cat_ro_repair',name:'RO / वाटर प्यूरीफायर रिपेयर'},
+      {id:'cat_mechanic',name:'वाहन मैकेनिक (2/4 व्हीलर)'},
+      {id:'cat_beautician',name:'ब्यूटीशियन / हेयर स्टाइलिस्ट'},
+      {id:'cat_yoga',name:'योग प्रशिक्षक'},
+      {id:'cat_massage',name:'मसाज थेरेपिस्ट (Male/Female)'},
+      {id:'cat_computer_repair',name:'कंप्यूटर / लैपटॉप रिपेयर'},
+      {id:'cat_web_designer',name:'वेब/ग्राफ़िक डिज़ाइनर (Freelancer)'},
+      {id:'cat_tax_consultant',name:'टैक्स/GST सलाहकार'},
+      {id:'cat_photographer',name:'फोटोग्राफर / वीडियोग्राफर'},
+      {id:'cat_event_planner',name:'इवेंट प्लानर'},
+      {id:'cat_movers',name:'पैकर्स एंड मूवर्स'},
+      {id:'cat_babysitter',name:'बेबी सिटर / आया'},
+      {id:'cat_elder_care',name:'बुजुर्गों की देखभाल'},
+      {id:'cat_tailor',name:'दर्जी (Tailor)'},
+      {id:'cat_welder',name:'वेल्डर'},
+      {id:'cat_dhobi',name:'धोबी / ड्राई क्लीनिंग'},
+      {id:'cat_vahan_chalak',name:'वाहन चालक (Commercial)'},
+      {id:'cat_safai_sup',name:'सफाई सुपरवाइजर'},
+      {id:'cat_tiles',name:'टाइल्स / मार्बल कारीगर'},
+      {id:'cat_gypsum',name:'जिप्सम/POP कारीगर'},
     ],
     employees:[
       {id:generateId(EMP_PREFIX),categoryId:'cat_plumber',name:'रमेश कुमार',experience:5,contact:'9876543210'},
       {id:generateId(EMP_PREFIX),categoryId:'cat_electrician',name:'सुरेश सिंह',experience:8,contact:'9988776655'},
+      {id:generateId(EMP_PREFIX),categoryId:'cat_cook',name:'प्रीति शर्मा',experience:3,contact:'9123456789'},
+      {id:generateId(EMP_PREFIX),categoryId:'cat_mechanic',name:'अजय वर्मा',experience:10,contact:'9000000001'},
     ]
   };
   return d;
@@ -356,7 +394,34 @@ function saveTrackedContact(contact){
 }
 
 
-// --- Category Rendering and Filtering ---
+// --- Category Selection Logic (UPDATED DYNAMIC MANAGEMENT) ---
+
+// Disable the select if new category input has value, and vice-versa
+function toggleCategorySelect(newCategoryValue) {
+    const select = document.getElementById('emp_category');
+    const input = document.getElementById('emp_new_category');
+    
+    if (newCategoryValue.trim().length > 0) {
+        select.value = ""; 
+        select.disabled = true; 
+    } else {
+        select.disabled = false; 
+    }
+}
+
+// Disable the new category input if select has value, and vice-versa
+function toggleNewCategoryInput(selectValue) {
+    const select = document.getElementById('emp_category');
+    const input = document.getElementById('emp_new_category');
+
+    if (selectValue !== "") {
+        input.value = ""; 
+        input.disabled = true; 
+    } else {
+        input.disabled = false; 
+    }
+}
+
 
 function populateAllCategorySelects(categories) {
     const empSelect = document.getElementById('emp_category');
@@ -371,16 +436,13 @@ function populateAllCategorySelects(categories) {
     postSelect.innerHTML = '<option value="">-- श्रेणी चुनें --</option>';
 
     categories.forEach(cat => {
-        // Employee Select
         let opt1 = new Option(cat.name, cat.id);
         empSelect.appendChild(opt1);
         
-        // Post Select
         let opt2 = new Option(cat.name, cat.id);
         postSelect.appendChild(opt2);
     });
     
-    // Attempt to restore selection
     empSelect.value = currentEmpVal;
     postSelect.value = currentPostVal;
 }
@@ -393,7 +455,6 @@ function renderCategoryNav(data){
       return;
   }
   
-  // 'सभी श्रेणियां' link
   const all=document.createElement('li');
   all.className='category-item';
   all.innerHTML=`<a href="javascript:void(0)" class="category-link ${currentFilter==='all'?'active':''}" data-category-id="all" data-category-name="सभी श्रेणियां">सभी श्रेणियां</a>`;
@@ -403,7 +464,6 @@ function renderCategoryNav(data){
   };
   nav.appendChild(all);
 
-  // Individual categories
   data.categories.forEach(c=>{
     const li=document.createElement('li');
     li.className='category-item';
@@ -420,20 +480,15 @@ function setFilter(id){
   currentFilter=id;const d=loadData();
   renderEmployees(d,id);
   
-  // Update the active filter text in search input if it's not set already by selectCategory
   const input = document.getElementById('categorySearchInput');
-  const currentCategoryInInput = categoriesList.find(c => c.name === input.value);
-  
-  if (id === 'all' && input.value !== 'सभी श्रेणियां') {
-    input.value = ''; // Clear search input for 'all'
-  } else if (id !== 'all' && (!currentCategoryInInput || currentCategoryInInput.id !== id)) {
-    const cat = categoriesList.find(c => c.id === id);
-    if (cat) {
-        input.value = cat.name;
-    }
+  const cat = categoriesList.find(c => c.id === id);
+
+  if (id === 'all') {
+    input.value = ''; 
+  } else if (cat) {
+    input.value = cat.name;
   }
 
-  // Highlight the active category link and scroll it into view
   document.querySelectorAll('.category-link').forEach(l=>{
     const isActive = l.dataset.categoryId===id;
     l.classList.toggle('active', isActive);
@@ -469,7 +524,7 @@ function renderEmployees(data,filter){
   });
 }
 
-// --- Search and Suggestions Logic ---
+// --- Search and Suggestions Logic (Unchanged) ---
 
 function renderSuggestions(query) {
     const suggestionsBox = document.getElementById('categorySuggestions');
@@ -477,12 +532,10 @@ function renderSuggestions(query) {
     const categories = categoriesList;
     const lowerQuery = query.toLowerCase().trim();
 
-    // Add 'सभी श्रेणियां' option if query is empty
     if (query.length === 0) {
         suggestionsBox.innerHTML += `<div class="suggestion-item" data-category-id="all" data-category-name="सभी श्रेणियां">सभी श्रेणियां</div>`;
     }
     
-    // Filter and display categories
     const filtered = categories.filter(cat => cat.name.toLowerCase().includes(lowerQuery));
 
     if (filtered.length === 0 && query.length > 0 && suggestionsBox.children.length === 0) {
@@ -549,7 +602,6 @@ function setupCategorySearch() {
                 if (exactMatch) {
                     selectCategory(exactMatch.id, exactMatch.name);
                 } else {
-                     // If no exact match, clear the filter and reset input
                      selectCategory('all', ''); 
                 }
             }
@@ -558,41 +610,7 @@ function setupCategorySearch() {
 }
 
 
-// --- Available Jobs Handlers ---
-
-function renderAvailableJobs(categories) { 
-    const posts = loadPosts();
-    document.getElementById('jobPostCount').textContent = posts.length;
-    const container = document.getElementById('availableJobsContainer');
-    container.innerHTML = '';
-    
-    if (posts.length === 0) {
-        container.innerHTML = `<p style="text-align: center; color: #555;">वर्तमान में कोई काम उपलब्ध नहीं है।</p>`;
-        return;
-    }
-    
-    posts.forEach(p => {
-        const cat = categories.find(c => c.id === p.category);
-        const catName = cat ? cat.name : 'अज्ञात';
-        
-        const wLink = `https://wa.me/91${p.contactNumber}?text=${encodeURIComponent(`नमस्ते, मैंने आपकी ${catName} सेवा की जॉब पोस्ट देखी है। क्या यह काम अभी भी उपलब्ध है? मेरा संपर्क नंबर ${p.contactNumber} है।`)}`;
-        
-        container.innerHTML += `
-            <div class="job-card">
-                <p><strong>श्रेणी:</strong> ${catName}</p>
-                <p><strong>विवरण:</strong> ${p.details}</p>
-                <p><strong>आवश्यकता:</strong> ${p.duration}</p>
-                <p><strong>संपर्क नाम:</strong> ${p.contactName}</p>
-                <div class="contact-buttons" style="margin-top:5px;">
-                     <a href="tel:+91${p.contactNumber}" class="call-btn" style="flex:auto;">कॉल करें</a>
-                     <a href="${wLink}" target="_blank" class="whatsapp-btn" style="flex:auto;">व्हाट्सएप करें</a>
-                </div>
-            </div>
-        `;
-    });
-}
-
-// --- My Posts / Job Request Handlers ---
+// --- My Posts / Job Request Handlers (Unchanged) ---
 
 function resetJobPostForm(categories, isUpdate=false) {
     document.getElementById('jobPostForm').reset();
@@ -639,38 +657,21 @@ function handleJobPost(e) {
     let posts = loadPosts();
 
     if (id) {
-        // Handle Edit/Update
         const index = posts.findIndex(p => p.id === id);
         if (index !== -1) {
-            posts[index] = {
-                ...posts[index], 
-                category: category,
-                details: details,
-                contactName: contactName,
-                contactNumber: contactNumber,
-                duration: duration
-            };
+            posts[index] = { ...posts[index], category, details, contactName, contactNumber, duration };
             document.getElementById('postMessage').textContent = 'जॉब रिक्वेस्ट सफलतापूर्वक अपडेट की गई!';
             document.getElementById('postMessage').classList.remove('success-msg');
             document.getElementById('postMessage').classList.add('success-msg'); 
         }
     } else {
-        // Handle New Post
-        const newPost = {
-            id: generateId('POST_'),
-            category: category,
-            details: details,
-            contactName: contactName,
-            contactNumber: contactNumber,
-            duration: duration,
-            timestamp: Date.now()
-        };
+        const newPost = { id: generateId('POST_'), category, details, contactName, contactNumber, duration, timestamp: Date.now() };
         posts.push(newPost);
         document.getElementById('postMessage').textContent = 'जॉब रिक्वेस्ट सफलतापूर्वक पोस्ट की गई!';
     }
     
     savePosts(posts);
-    saveTrackedContact(contactNumber); // Save the contact number for tracking
+    saveTrackedContact(contactNumber); 
     
     const postMsg = document.getElementById('postMessage');
     postMsg.style.display = 'block';
@@ -744,24 +745,21 @@ function editPost(postId) {
     editingPostId = postId;
     document.getElementById('editingPostId').value = postId;
 
-    // Pre-fill the form
     document.getElementById('post_category').value = post.category;
     document.getElementById('post_work_details').value = post.details;
     document.getElementById('post_contact_name').value = post.contactName;
     document.getElementById('post_contact_number').value = post.contactNumber;
     document.getElementById('post_duration').value = post.duration;
 
-    // Update button text and style
     const btn = document.getElementById('submitJobPostBtn');
     btn.textContent = 'पोस्ट अपडेट करें';
     btn.style.background = '#ffc107'; 
 
-    // Scroll to the form
     window.scrollTo({ top: document.getElementById('jobPostForm').offsetTop - 20, behavior: 'smooth' });
 }
 
 
-// --- Employee Registration Handler (UPDATED Button Animation) ---
+// --- Employee Registration Handler (UPDATED Validation Logic) ---
 function handleEmployeeRegistration(e) {
     e.preventDefault();
     
@@ -771,18 +769,28 @@ function handleEmployeeRegistration(e) {
     const originalIcon = 'how_to_reg';
     const originalText = 'पंजीकरण करें';
 
-    // Show loading state
     btn.disabled = true;
     registerIcon.className = 'loading-spinner'; 
     registerIcon.style.marginRight = '8px';
     registerText.textContent = 'पंजीकरण हो रहा है...';
 
     const name = document.getElementById('emp_name').value.trim();
-    const categoryId = document.getElementById('emp_category').value; 
+    let categoryId = document.getElementById('emp_category').value; 
+    const newCategoryName = document.getElementById('emp_new_category').value.trim();
     const exp = parseInt(document.getElementById('emp_exp').value);
     const contact = document.getElementById('emp_contact').value.trim().replace(/\D/g, ''); 
 
-    if (!name || categoryId === "" || isNaN(exp) || contact.length < 10) {
+    // VALIDATION LOGIC: Must select category OR enter new category
+    if (!categoryId && !newCategoryName) {
+         alert('कृपया अपनी विशेषज्ञता की श्रेणी चुनें या नई श्रेणी जोड़ें।'); 
+         btn.disabled = false;
+         registerIcon.className = 'material-icons';
+         registerIcon.textContent = originalIcon;
+         registerText.textContent = originalText;
+         return;
+    }
+    
+    if (!name || isNaN(exp) || contact.length < 10) {
         alert('कृपया सभी आवश्यक जानकारी सही ढंग से भरें।'); 
         btn.disabled = false;
         registerIcon.className = 'material-icons';
@@ -802,14 +810,22 @@ function handleEmployeeRegistration(e) {
         return;
     }
 
-    const newEmployee = {
-        id: generateId(EMP_PREFIX), 
-        categoryId: categoryId, 
-        name: name,
-        experience: exp, 
-        contact: contact
-    };
-
+    // Handle New Category Creation
+    if (newCategoryName) {
+        const existingCat = data.categories.find(c => c.name.toLowerCase() === newCategoryName.toLowerCase());
+        
+        if (existingCat) {
+            categoryId = existingCat.id; 
+        } else {
+            categoryId = generateId(CAT_PREFIX);
+            const newCategory = { id: categoryId, name: newCategoryName };
+            data.categories.push(newCategory);
+            saveData(data); 
+            loadData(); // Reload categoriesList
+        }
+    }
+    
+    const newEmployee = { id: generateId(EMP_PREFIX), categoryId: categoryId, name: name, experience: exp, contact: contact };
     data.employees.push(newEmployee);
     saveData(data); 
 
@@ -817,14 +833,13 @@ function handleEmployeeRegistration(e) {
     registerIcon.className = 'material-icons';
     registerIcon.textContent = 'done_all'; 
     registerText.textContent = 'सफल!';
-    btn.style.background = 'rgb(21, 87, 36)'; // Darker green for success - Matches success-msg color
+    btn.style.background = 'rgb(21, 87, 36)'; 
 
     document.getElementById('employeeRegisterForm').reset();
     
     setTimeout(() => { 
-        // Reset button and switch section
         btn.disabled = false;
-        btn.style.background = ''; // Revert to CSS gradient
+        btn.style.background = ''; 
         registerIcon.textContent = originalIcon;
         registerIcon.className = 'material-icons';
         registerText.textContent = originalText;
@@ -865,6 +880,11 @@ function switchSection(targetSectionId){
          resetJobPostForm(categories); 
     } else if (targetSectionId === 'employeeRegisterSection') { 
          populateAllCategorySelects(categories); 
+         // Reset state of new category fields
+         document.getElementById('emp_new_category').value = ''; 
+         document.getElementById('emp_category').value = ''; 
+         document.getElementById('emp_new_category').disabled = false; 
+         document.getElementById('emp_category').disabled = false;
     }
 
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -887,6 +907,10 @@ document.addEventListener('DOMContentLoaded', () => {
      });
      
      setupCategorySearch();
+     
+     // Setup dynamic field management listeners
+     document.getElementById('emp_category').addEventListener('change', (e) => toggleNewCategoryInput(e.target.value));
+     document.getElementById('emp_new_category').addEventListener('input', (e) => toggleCategorySelect(e.target.value));
      
      switchSection('homeSection');
 });
