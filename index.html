@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>एडमिन पैनल - सेवा प्रबंधन</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    
+    <style>
+        /* (CSS Styles) */
+        body { font-family: 'Poppins', sans-serif; margin: 0; padding: 0; background: linear-gradient(135deg, #e9ecef 0%, #dcdcfe 100%); color: #333; }
+        .header { background: linear-gradient(90deg, #5200b3, #8352b8); color: white; padding: 20px 0; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+        .container { padding: 30px; max-width: 1100px; margin: 40px auto; background: white; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); }
+        h2 { color: #007bff; border-bottom: 3px solid #dcdcfe; padding-bottom: 10px; margin-top: 35px; font-weight: 700; text-transform: uppercase; }
+        form { background: #f8f9fa; padding: 25px; border-radius: 12px; margin-bottom: 30px; border: 1px solid #e0e0e0; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        input:not([type="checkbox"]), select { width: 100%; padding: 12px; margin-bottom: 15px; border-radius: 8px; box-sizing: border-box; border: 1px solid #ccc; }
+        .btn-gradient { padding: 12px 20px; border: none; border-radius: 8px; font-weight: 700; color: white; cursor: pointer; transition: transform 0.2s; }
+        .btn-gradient:hover { transform: translateY(-2px); }
+        .save-btn { background: linear-gradient(45deg, #007bff, #0056b3); }
+        .delete-btn { background: linear-gradient(45deg, #dc3545, #c82333); }
+        .edit-btn { background: linear-gradient(45deg, #ffc107, #e0a800); color: #333; }
+        .list-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .list-table th, .list-table td { border: 1px solid #dee2e6; padding: 12px; text-align: left; }
+        .list-table th { background-color: #f1f1f1; font-weight: 600; }
+        .action-btns button { margin-right: 5px; }
+    </style>
+</head>
+<body>
+    
+    <script>
+        // स्टोरेज की (KEY) को एक स्थिर नाम दिया गया है
+        const STORAGE_KEY = 'serviceApp_admin_data_final'; 
+        const EMPLOYEE_PREFIX = 'EMP_';
+
+        const initialCategories = [
+            // 29 local service categories (This is the master list for seeding)
+            { name: "प्लंबर", id: "plumber" }, { name: "इलेक्ट्रीशियन", id: "electrician" }, 
+            { name: "मेसन/राजमिस्त्री", id: "mason" }, { name: "कारपेंटर", id: "carpenter" }, 
+            { name: "पेंटर", id: "painter" }, { name: "वेल्डर", id: "welder" }, 
+            { name: "एसी तकनीशियन", id: "actech" }, { name: "कंप्यूटर रिपेयर", id: "comprep" },
+            { name: "मोबाइल रिपेयर", id: "mobilerep" }, { name: "टाइल/पत्थर वर्कर", id: "tile" }, 
+            { name: "गार्डनर/माली", id: "gardener" }, { name: "ड्राइवर (टैक्सी/कार)", id: "driver" },
+            { name: "कुक/बावर्ची", id: "cook" }, { name: "हेल्पर/सहायक", id: "helper" }, 
+            { name: "इंटीरियर डिजाइनर", id: "interior" }, { name: "ब्यूटीशियन/मेकअप आर्टिस्ट", id: "beautician" }, 
+            { name: "सफाई कर्मी/हाउसकीपिंग", id: "cleaner" }, { name: "सुरक्षा गार्ड/चौकीदार", id: "guard" },
+            { name: "फैब्रिकेटर", id: "fabricator" }, { name: "वेब डिजाइनर/डेवलपर", id: "webdesigner" },
+            { name: "शिक्षक (ट्यूटर)", id: "teacher" }, { name: "कार मैकेनिक", id: "carmech" }, 
+            { name: "मोची", id: "cobbler" }, { name: "बैंक कर्मचारी (होम सर्विस)", id: "bankrep" }, 
+            { name: "कंप्यूटर ऑपरेटर/डाटा एंट्री", id: "comop" }, { name: "फिटनेस ट्रेनर", id: "trainer" }, 
+            { name: "धोबी/लॉन्ड्री सर्विस", id: "laundry" }, { name: "पंडित/पूजा सर्विस", id: "pandit" }, 
+            { name: "बच्चों की देखभाल/नैनी", id: "nanny" }
+        ];
+
+        // --- Utility Functions ---
+        function generateUniqueId(prefix = '') {
+            return prefix + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+        }
+
+        // यह फंक्शन सुनिश्चित करता है कि डेटा सही संरचना में लोड हो और categories खाली न हों।
+        function loadFullAdminData() {
+            try {
+                let data = JSON.parse(localStorage.getItem(STORAGE_KEY));
+                
+                if (!data || !data.categories || !data.employees) {
+                    // अगर डेटा मौजूद नहीं है या corrupt है, तो initialCategories के साथ लोड करें
+                    data = { categories: initialCategories, employees: [] };
+                    saveAdminData(data); // Save default categories immediately
+                } else if (data.categories.length === 0) {
+                     // अगर categories लिस्ट खाली है, तो initialCategories से भरें
+                    data.categories = initialCategories;
+                    saveAdminData(data); 
+                }
+                
+                return data;
+            } catch (e) {
+                console.error("Error loading data from localStorage:", e);
+                // त्रुटि होने पर default डेटा लौटाएँ
+                return { categories: initialCategories, employees: [] }; 
+            }
+        }
+
+        function saveAdminData(data) {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+                return true;
+            } catch (e) {
+                console.error("Error saving data to localStorage:", e);
+                alert("डेटा सेव करने में त्रुटि! (शायद ब्राउज़र प्राइवेट मोड में है)");
+                return false;
+            }
+        }
+
+        // --- Category Management ---
+        function submitCategory(e) {
+            e.preventDefault();
+            const nameInput = document.getElementById('category_name');
+            const hiddenId = document.getElementById('categoryIdToEdit');
+            const submitBtn = document.getElementById('categorySubmitBtn');
+            const name = nameInput.value.trim();
+            const id = hiddenId.value;
+
+            if (!name) return;
+
+            const data = loadFullAdminData();
+            
+            if (id) {
+                // Edit existing category
+                const category = data.categories.find(c => c.id === id);
+                if (category) {
+                    category.name = name;
+                    
+                    if (saveAdminData(data)) {
+                        alert('श्रेणी सफलतापूर्वक अपडेट की गई!');
+                        hiddenId.value = '';
+                        submitBtn.textContent = 'श्रेणी सेव करें';
+                        nameInput.value = '';
+                        renderAdminPanel();
+                    }
+                }
+            } else {
+                // Add new category
+                const newId = name.toLowerCase().replace(/[^a-z0-9]/g, ''); 
+                
+                if (data.categories.some(c => c.id === newId)) {
+                    alert('यह श्रेणी पहले से मौजूद है।');
+                    return;
+                }
+
+                data.categories.push({ id: newId, name: name });
+                
+                if (saveAdminData(data)) {
+                    alert('श्रेणी सफलतापूर्वक जोड़ी गई!');
+                    nameInput.value = '';
+                    renderAdminPanel();
+                }
+            }
+        }
+        
+        function deleteCategory(id) {
+            if (!confirm('क्या आप सच में इस श्रेणी को डिलीट करना चाहते हैं?')) return;
+
+            const data = loadFullAdminData();
+            data.categories = data.categories.filter(c => c.id !== id);
+            
+            if (saveAdminData(data)) {
+                alert('श्रेणी सफलतापूर्वक डिलीट की गई।');
+                renderAdminPanel();
+            }
+        }
+
+        function editCategory(id) {
+            const data = loadFullAdminData();
+            const category = data.categories.find(c => c.id === id);
+            if (category) {
+                document.getElementById('category_name').value = category.name;
+                document.getElementById('categoryIdToEdit').value = category.id;
+                document.getElementById('categorySubmitBtn').textContent = 'श्रेणी अपडेट करें';
+                window.scrollTo(0, document.getElementById('addCategoryForm').offsetTop - 50);
+            }
+        }
+        
+        function renderCategoryList(categories) {
+            const tbody = document.getElementById('categoryListBody');
+            tbody.innerHTML = '';
+            categories.forEach(cat => {
+                const row = tbody.insertRow();
+                row.insertCell().textContent = cat.name;
+                const actionCell = row.insertCell();
+                actionCell.classList.add('action-btns');
+                actionCell.innerHTML = `
+                    <button class="btn-gradient edit-btn" onclick="editCategory('${cat.id}')">एडिट</button>
+                    <button class="btn-gradient delete-btn" onclick="deleteCategory('${cat.id}')">डिलीट</button>
+                `;
+            });
+        }
+        
+        function renderEmployeeForms(categories) {
+            const select = document.getElementById('worker_category');
+            // Save current value before clearing
+            const currentValue = select.value; 
+            select.innerHTML = '<option value="">-- श्रेणी चुनें --</option>';
+            categories.forEach(cat => {
+                 const option = document.createElement('option');
+                 option.value = cat.id;
+                 option.textContent = cat.name;
+                 select.appendChild(option);
+            });
+            // Restore current value
+            select.value = currentValue;
+        }
+
+        // --- Employee Management ---
+        function submitEmployee(e) {
+            e.preventDefault();
+            const name = document.getElementById('worker_name').value.trim();
+            const categoryId = document.getElementById('worker_category').value;
+            const contact = document.getElementById('worker_contact').value.trim().replace(/\D/g, ''); // Clean contact
+            const experience = document.getElementById('worker_experience').value.trim();
+            const docId = document.getElementById('employeeDocId').value;
+            const submitBtn = document.getElementById('employeeSubmitBtn');
+
+
+            if (!name || !categoryId || !contact || !experience) {
+                alert('कृपया सभी फ़ील्ड भरें।');
+                return;
+            }
+            if (contact.length < 10 || isNaN(contact)) {
+                alert('कृपया 10 अंकों का मान्य संपर्क नंबर दर्ज करें।');
+                return;
+            }
+
+            const data = loadFullAdminData();
+            const employeeData = {
+                name,
+                categoryId,
+                contact,
+                experience: parseInt(experience, 10)
+            };
+            
+            let successMessage = '';
+
+            if (docId) {
+                // Edit existing employee
+                const index = data.employees.findIndex(emp => emp.id === docId);
+                if (index !== -1) {
+                    // Preserve original ID
+                    data.employees[index] = { ...data.employees[index], ...employeeData }; 
+                    successMessage = 'कर्मचारी डेटा सफलतापूर्वक अपडेट किया गया!';
+                }
+            } else {
+                // Add new employee
+                 if (data.employees.some(emp => emp.contact === contact)) {
+                    alert('यह संपर्क नंबर पहले से ही पंजीकृत है।');
+                    return;
+                }
+                employeeData.id = generateUniqueId(EMPLOYEE_PREFIX);
+                data.employees.push(employeeData);
+                successMessage = 'कर्मचारी सफलतापूर्वक जोड़ा गया!';
+            }
+
+            if (saveAdminData(data)) {
+                alert(successMessage);
+                document.getElementById('addEmployeeForm').reset();
+                document.getElementById('employeeDocId').value = '';
+                submitBtn.textContent = 'कर्मचारी डेटा सेव करें';
+                renderAdminPanel();
+            }
+        }
+
+        function deleteEmployee(id) {
+            if (!confirm('क्या आप सच में इस कर्मचारी को डिलीट करना चाहते हैं?')) return;
+
+            const data = loadFullAdminData();
+            data.employees = data.employees.filter(emp => emp.id !== id);
+            
+            if (saveAdminData(data)) {
+                alert('कर्मचारी सफलतापूर्वक डिलीट किया गया।');
+                renderAdminPanel();
+            }
+        }
+
+        function editEmployee(id) {
+            const data = loadFullAdminData();
+            const employee = data.employees.find(emp => emp.id === id);
+            if (employee) {
+                document.getElementById('worker_name').value = employee.name;
+                document.getElementById('worker_category').value = employee.categoryId;
+                document.getElementById('worker_contact').value = employee.contact;
+                document.getElementById('worker_experience').value = employee.experience;
+                document.getElementById('employeeDocId').value = employee.id;
+                document.getElementById('employeeSubmitBtn').textContent = 'कर्मचारी डेटा अपडेट करें';
+                window.scrollTo(0, document.getElementById('addEmployeeForm').offsetTop - 50);
+            }
+        }
+
+        function renderEmployeeList(employees, categories) {
+            const tbody = document.getElementById('employeeListBody');
+            tbody.innerHTML = '';
+            
+            const categoryMap = categories.reduce((map, cat) => {
+                map[cat.id] = cat.name;
+                return map;
+            }, {});
+
+            employees.forEach(emp => {
+                const row = tbody.insertRow();
+                row.insertCell().textContent = emp.name;
+                row.insertCell().textContent = categoryMap[emp.categoryId] || 'अज्ञात';
+                row.insertCell().textContent = emp.contact;
+                const actionCell = row.insertCell();
+                actionCell.classList.add('action-btns');
+                actionCell.innerHTML = `
+                    <button class="btn-gradient edit-btn" onclick="editEmployee('${emp.id}')">एडिट</button>
+                    <button class="btn-gradient delete-btn" onclick="deleteEmployee('${emp.id}')">डिलीट</button>
+                `;
+            });
+        }
+
+        // --- Main Renderer ---
+        function renderAdminPanel() {
+            const data = loadFullAdminData();
+            renderCategoryList(data.categories);
+            renderEmployeeForms(data.categories);
+            renderEmployeeList(data.employees, data.categories);
+        }
+
+        window.onload = renderAdminPanel;
+    </script>
+
+    <div class="header">
+        <h1>सेवा प्रबंधन एडमिन पैनल</h1>
+    </div>
+
+    <div class="container">
+        
+        <!-- 1. Category Management -->
+        <h2>1. श्रेणी प्रबंधन</h2>
+        <form id="addCategoryForm" onsubmit="submitCategory(event)">
+             <input type="hidden" id="categoryIdToEdit" value=""> <!-- Added for edit functionality -->
+             <input type="text" id="category_name" placeholder="श्रेणी का नाम (उदा: प्लम्बर)" required>
+             <button type="submit" class="btn-gradient save-btn" id="categorySubmitBtn">श्रेणी सेव करें</button>
+        </form>
+        <table class="list-table">
+            <thead><tr><th>श्रेणी</th><th>क्रिया</th></tr></thead>
+            <tbody id="categoryListBody"></tbody>
+        </table>
+
+        <!-- 2. Employee Management -->
+        <h2>2. कर्मचारी प्रबंधन</h2>
+        <form id="addEmployeeForm" onsubmit="submitEmployee(event)">
+            <input type="hidden" id="employeeDocId" value="">
+            <input type="text" id="worker_name" placeholder="कर्मचारी का नाम" required>
+            <select id="worker_category" required><option value="">-- श्रेणी चुनें --</option></select>
+            <!-- Changed type to 'text' for better mobile keyboard and pattern matching -->
+            <input type="text" id="worker_contact" inputmode="numeric" placeholder="संपर्क नंबर (10 अंक)" required> 
+            <input type="number" id="worker_experience" min="0" placeholder="अनुभव (साल में)" required>
+            <div style="display: flex; gap: 10px;"><button type="submit" class="btn-gradient save-btn" id="employeeSubmitBtn">कर्मचारी डेटा सेव करें</button></div>
+        </form>
+        <table class="list-table">
+            <thead><tr><th>नाम</th><th>श्रेणी</th><th>संपर्क</th><th>क्रिया</th></tr></thead>
+            <tbody id="employeeListBody"></tbody>
+        </table>
+
+    </div>
+</body>
+</html>
