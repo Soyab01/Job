@@ -32,7 +32,7 @@
         box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         z-index: 50;
         display: none; 
-        top: 100%; /* Position below the input */
+        top: 100%; 
     }
     .suggestion-item {
         padding: 10px 15px;
@@ -92,17 +92,44 @@
     /* Buttons */
     .form-btn { background: #007bff; color: white; padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; width: 100%; margin-top: 10px; font-weight: 600; transition: background 0.3s;}
     .form-btn:hover { background: #0056b3; }
-    /* Advanced Button Style for Registration */
+    
+    /* Advanced Button Style for Registration (IMPROVED) */
     #employeeRegisterForm button { 
-        background: #28a745; 
+        /* Base Styling */
+        background: linear-gradient(135deg, #28a745, #1e8736); /* Subtle Gradient */
+        color: white;
+        padding: 12px 15px; /* Slightly taller */
+        border: none;
+        border-radius: 8px; /* Slightly larger border-radius */
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0, 0, 0, 0.08); /* 3D Shadow */
+        cursor: pointer; 
+        width: 100%; 
+        margin-top: 15px; 
+        font-weight: 700; /* Bolder text */
+        text-transform: uppercase; /* Slightly more professional */
+        letter-spacing: 0.5px;
+        transition: all 0.2s ease;
+        
+        /* Flex for alignment */
         display: flex; 
         align-items: center; 
         justify-content: center; 
-        transition: background 0.3s, transform 0.1s;
+    }
+    #employeeRegisterForm button:hover {
+        background: linear-gradient(135deg, #1e8736, #156d2b); /* Darker on hover */
+        box-shadow: 0 6px 10px rgba(0, 0, 0, 0.2), 0 2px 4px rgba(0, 0, 0, 0.1); /* Lift up effect */
     }
     #employeeRegisterForm button:active {
-        transform: scale(0.98);
+        transform: translateY(2px); /* Press down effect */
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Reduce shadow */
     }
+    
+    /* Success State for Button */
+    #employeeRegisterForm button[style*="background: rgb(21, 87, 36)"] { /* Matches the success state color in JS */
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15); /* Keep shadow for success */
+        transform: none;
+    }
+
     /* Loading Spinner */
     .loading-spinner { 
         border: 2px solid #f3f3f3; 
@@ -372,8 +399,7 @@ function renderCategoryNav(data){
   all.innerHTML=`<a href="javascript:void(0)" class="category-link ${currentFilter==='all'?'active':''}" data-category-id="all" data-category-name="सभी श्रेणियां">सभी श्रेणियां</a>`;
   all.querySelector('a').onclick=(e)=>{
       e.preventDefault(); 
-      setFilter('all');
-      document.getElementById('categorySearchInput').value = 'सभी श्रेणियां'; // Set input value
+      selectCategory('all', 'सभी श्रेणियां');
   };
   nav.appendChild(all);
 
@@ -384,8 +410,7 @@ function renderCategoryNav(data){
     li.innerHTML=`<a href="javascript:void(0)" class="category-link ${currentFilter===c.id?'active':''}" data-category-id="${c.id}" data-category-name="${c.name}">${c.name}</a>`;
     li.querySelector('a').onclick=(e)=>{
         e.preventDefault(); 
-        setFilter(c.id);
-        document.getElementById('categorySearchInput').value = c.name; // Set input value
+        selectCategory(c.id, c.name);
     };
     nav.appendChild(li);
   });
@@ -395,13 +420,16 @@ function setFilter(id){
   currentFilter=id;const d=loadData();
   renderEmployees(d,id);
   
-  // Update the active filter text in search input if switching from an unknown category to 'all'
-  if (id === 'all') {
-    document.getElementById('categorySearchInput').value = '';
-  } else {
+  // Update the active filter text in search input if it's not set already by selectCategory
+  const input = document.getElementById('categorySearchInput');
+  const currentCategoryInInput = categoriesList.find(c => c.name === input.value);
+  
+  if (id === 'all' && input.value !== 'सभी श्रेणियां') {
+    input.value = ''; // Clear search input for 'all'
+  } else if (id !== 'all' && (!currentCategoryInInput || currentCategoryInInput.id !== id)) {
     const cat = categoriesList.find(c => c.id === id);
     if (cat) {
-        document.getElementById('categorySearchInput').value = cat.name;
+        input.value = cat.name;
     }
   }
 
@@ -441,7 +469,7 @@ function renderEmployees(data,filter){
   });
 }
 
-// --- Search and Suggestions Logic (UPDATED) ---
+// --- Search and Suggestions Logic ---
 
 function renderSuggestions(query) {
     const suggestionsBox = document.getElementById('categorySuggestions');
@@ -457,7 +485,7 @@ function renderSuggestions(query) {
     // Filter and display categories
     const filtered = categories.filter(cat => cat.name.toLowerCase().includes(lowerQuery));
 
-    if (filtered.length === 0 && query.length > 0) {
+    if (filtered.length === 0 && query.length > 0 && suggestionsBox.children.length === 0) {
         suggestionsBox.style.display = 'none';
         return;
     }
@@ -485,10 +513,9 @@ function renderSuggestions(query) {
 }
 
 function selectCategory(categoryId, categoryName) {
-    // UPDATED: Ensure input and suggestions are handled correctly
     document.getElementById('categorySearchInput').value = categoryName; 
     document.getElementById('categorySuggestions').style.display = 'none'; 
-    setFilter(categoryId); // This is where the filtering happens
+    setFilter(categoryId); 
 }
 
 function setupCategorySearch() {
@@ -521,6 +548,9 @@ function setupCategorySearch() {
                 const exactMatch = categoriesList.find(c => c.name.toLowerCase() === input.value.trim().toLowerCase());
                 if (exactMatch) {
                     selectCategory(exactMatch.id, exactMatch.name);
+                } else {
+                     // If no exact match, clear the filter and reset input
+                     selectCategory('all', ''); 
                 }
             }
         }
@@ -567,7 +597,6 @@ function renderAvailableJobs(categories) {
 function resetJobPostForm(categories, isUpdate=false) {
     document.getElementById('jobPostForm').reset();
     
-    // NEW: Pre-fill contact number if one is tracked
     if (userTrackedContact) {
         document.getElementById('post_contact_number').value = userTrackedContact; 
     }
@@ -591,7 +620,7 @@ function handleJobPost(e) {
     const category = document.getElementById('post_category').value;
     const details = postForm.querySelector('textarea#post_work_details').value.trim();
     const contactName = document.getElementById('post_contact_name').value.trim();
-    const contactNumber = document.getElementById('post_contact_number').value.trim().replace(/\D/g, ''); // Clean contact
+    const contactNumber = document.getElementById('post_contact_number').value.trim().replace(/\D/g, ''); 
     const duration = document.getElementById('post_duration').value.trim();
     
     const btn = document.getElementById('submitJobPostBtn');
@@ -646,14 +675,12 @@ function handleJobPost(e) {
     const postMsg = document.getElementById('postMessage');
     postMsg.style.display = 'block';
     
-    // Re-render user's own posts immediately
     renderMyPosts(loadData().categories);
-    resetJobPostForm(loadData().categories, true); // Reset form and remove editing state
+    resetJobPostForm(loadData().categories, true); 
     
     btn.disabled = false;
     btn.innerHTML = originalText;
     
-    // Hide message after a delay
     setTimeout(() => { 
         postMsg.style.display = 'none';
         if (document.getElementById('availableJobsSection').classList.contains('active')) {
@@ -664,7 +691,6 @@ function handleJobPost(e) {
 
 
 function renderMyPosts(categories) { 
-     // Filter using the dynamically tracked contact number
      const myPosts = loadPosts().filter(p => p.contactNumber === userTrackedContact); 
      document.getElementById('myPostCount').textContent = myPosts.length;
      const container = document.getElementById('myPostsContainer');
@@ -672,7 +698,6 @@ function renderMyPosts(categories) {
      
      if (!userTrackedContact || myPosts.length === 0) {
           container.innerHTML = `<p style="text-align: center; color: #555;">आपकी कोई जॉब रिक्वेस्ट पोस्ट नहीं की गई है।</p>`;
-          // If no posts are found, but a contact is tracked, suggest posting
           if (userTrackedContact) {
              container.innerHTML += `<p style="text-align: center; color: #007bff; font-weight: 600;">ऊपर दिए गए फॉर्म में जॉब रिक्वेस्ट पोस्ट करें।</p>`;
           }
@@ -748,7 +773,7 @@ function handleEmployeeRegistration(e) {
 
     // Show loading state
     btn.disabled = true;
-    registerIcon.className = 'loading-spinner'; // Replace icon with spinner
+    registerIcon.className = 'loading-spinner'; 
     registerIcon.style.marginRight = '8px';
     registerText.textContent = 'पंजीकरण हो रहा है...';
 
@@ -792,15 +817,16 @@ function handleEmployeeRegistration(e) {
     registerIcon.className = 'material-icons';
     registerIcon.textContent = 'done_all'; 
     registerText.textContent = 'सफल!';
-    btn.style.background = '#155724'; // Darker green for success
+    btn.style.background = 'rgb(21, 87, 36)'; // Darker green for success - Matches success-msg color
 
     document.getElementById('employeeRegisterForm').reset();
     
     setTimeout(() => { 
         // Reset button and switch section
         btn.disabled = false;
-        btn.style.background = '#28a745'; // Back to original green
+        btn.style.background = ''; // Revert to CSS gradient
         registerIcon.textContent = originalIcon;
+        registerIcon.className = 'material-icons';
         registerText.textContent = originalText;
 
         switchSection('homeSection'); 
@@ -822,22 +848,20 @@ function switchSection(targetSectionId){
 
     // 2. Section Specific Logic
     if (targetSectionId === 'homeSection') {
-         // Reset search input on home switch if filter is 'all'
-         if (currentFilter === 'all') {
+         if (currentFilter === 'all' || !categoriesList.some(c => c.id === currentFilter)) {
              document.getElementById('categorySearchInput').value = ''; 
          }
          document.getElementById('categorySuggestions').style.display = 'none';
          
          if (!currentFilter) currentFilter = 'all';
          renderCategoryNav(data); 
-         setFilter(currentFilter); // Re-render employees based on current filter
+         setFilter(currentFilter); 
          
     } else if (targetSectionId === 'availableJobsSection') {
          renderAvailableJobs(categories);
     } else if (targetSectionId === 'profileSection') { 
          populateAllCategorySelects(categories); 
          renderMyPosts(categories); 
-         // Pre-fill contact number/reset form
          resetJobPostForm(categories); 
     } else if (targetSectionId === 'employeeRegisterSection') { 
          populateAllCategorySelects(categories); 
