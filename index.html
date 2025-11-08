@@ -4,26 +4,28 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>कर्मचारी बुकिंग सेवा - घर पर सेवाएँ</title>
-  <!-- Firebase SDK Imports (MUST BE HERE OR VIA SCRIPT TAGS) -->
+  <!-- 
+    !! महत्वपूर्ण !!
+    Firebase Realtime Database (RTDB) SDK को इस फ़ाइल में जोड़ें।
+    उदा: <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js"></script>
+  -->
   <script type="module">
-    // Import the functions you need from the SDKs you need
     import { initializeApp } from "firebase/app";
-    // import { getDatabase, ref, get, set } from "firebase/database"; // <-- UNCOMMENT FOR RTDB
+    import { getDatabase, ref, get, set } from "firebase/database"; // <-- RTDB Imports
 
     const firebaseConfig = {
-      apiKey: "AIzaSyAhg7hKJ123JRAfio7fymK543XpuNonMHo",
-      authDomain: "showpdf-ffa34.firebaseapp.com",
-      databaseURL: "https://showpdf-ffa34-default-rtdb.firebaseio.com",
-      projectId: "showpdf-ffa34",
-      storageBucket: "showpdf-ffa34.firebasestorage.app",
-      messagingSenderId: "943291456891",
-      appId: "1:943291456891:web:b96e20acd76bd3463b71de",
-      measurementId: "G-T4KNP5ZPP4"
+      apiKey: "AIzaSyACNrzJgRGKmn8JsRuS_2b7RecPIfahTvQ",
+      authDomain: "singup-aec8c.firebaseapp.com",
+      databaseURL: "https://singup-aec8c-default-rtdb.firebaseio.com",
+      projectId: "singup-aec8c",
+      storageBucket: "singup-aec8c.appspot.com",
+      messagingSenderId: "619246550282",
+      appId: "1:619246550282:web:ab0bb54003d529ca820ef3",
+      measurementId: "G-5KYVBVXQZP"
     };
 
-    // Initialize Firebase
     window.firebaseApp = initializeApp(firebaseConfig);
-    // window.firebaseDB = getDatabase(window.firebaseApp); // <-- UNCOMMENT FOR RTDB
+    window.firebaseDB = getDatabase(window.firebaseApp); // <-- RTDB Initialized
   </script>
 
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
@@ -191,10 +193,7 @@
 
 <script>
 // --- Shared Constants ---
-const STORAGE_DATA_KEY = 'serviceApp_data_final_v2'; // For Categories and Employees
-const STORAGE_POSTS_KEY = 'serviceApp_posts_final_v2'; // For Job Posts
-const EMP_PREFIX = 'EMP_';
-const POST_PREFIX = 'POST_';
+const FIREBASE_DATA_KEY = 'serviceAppData'; // Main key for RTDB
 
 let currentFilter = 'all';
 let userTrackedContact = localStorage.getItem('user_tracked_contact') || ''; 
@@ -202,7 +201,6 @@ let categoriesList = [];
 let employeesList = [];
 let jobPostsList = [];
 
-// Seed Categories for initial load
 const SEED_CATEGORIES = [
     {id:'cat_plumber',name:'प्लंबर'}, {id:'cat_electrician',name:'इलेक्ट्रीशियन'}, 
     {id:'cat_carpenter',name:'बढ़ई'}, {id:'cat_cleaner',name:'सफाई कर्मचारी'}, 
@@ -213,24 +211,33 @@ const SEED_CATEGORIES = [
 
 function generateId(prefix=''){return prefix+Date.now().toString(36)+Math.random().toString(36).substr(2,5);}
 
-// --- Firebase Placeholder Functions (RTDB Implementation required) ---
+// --- Data Fetch/Save Functions (Now using REAL Firebase RTDB Logic) ---
 async function fetchDataFromFirebase() {
     try {
-        // *** REPLACE THIS LOGIC WITH REAL FIREBASE RTDB/FIRESTORE FETCH ***
-        
-        // Fallback Load: Load data and posts separately
-        let data = JSON.parse(localStorage.getItem(STORAGE_DATA_KEY)) || { categories: [], employees: [] };
-        let posts = JSON.parse(localStorage.getItem(STORAGE_POSTS_KEY)) || [];
-
-        // Load seed data if main data is empty 
-        if (!data.categories || data.categories.length === 0) {
-            data.categories = SEED_CATEGORIES;
-            // NOTE: Admin Panel should save this first for consistency.
+        if (!window.firebaseDB) {
+            console.error("Firebase DB not initialized. Using temporary fallback (check Console).");
+            let data = JSON.parse(localStorage.getItem('TEMP_' + FIREBASE_DATA_KEY)) || { categories: [], employees: [], posts: [] };
+            if (!data.categories || data.categories.length === 0) data.categories = SEED_CATEGORIES;
+            categoriesList = data.categories || [];
+            employeesList = data.employees || [];
+            jobPostsList = data.posts || [];
+            return { categories: categoriesList, employees: employeesList, posts: jobPostsList };
         }
         
-        categoriesList = data.categories || [];
-        employeesList = data.employees || [];
-        jobPostsList = posts || []; 
+        // RTDB Logic:
+        const dbRef = ref(window.firebaseDB, FIREBASE_DATA_KEY);
+        const snapshot = await get(dbRef);
+        let data = snapshot.val() || { categories: [], employees: [], posts: [] };
+        
+        // Convert Firebase object lists back to JS arrays
+        categoriesList = Array.isArray(data.categories) ? data.categories : Object.values(data.categories || {});
+        employeesList = Array.isArray(data.employees) ? data.employees : Object.values(data.employees || {});
+        jobPostsList = Array.isArray(data.posts) ? data.posts : Object.values(data.posts || {});
+
+        // Load seed data if main data is empty 
+        if (!categoriesList || categoriesList.length === 0) {
+            categoriesList = SEED_CATEGORIES;
+        }
 
         return { categories: categoriesList, employees: employeesList, posts: jobPostsList };
     } catch (e) {
@@ -241,14 +248,15 @@ async function fetchDataFromFirebase() {
 
 async function saveAllDataToFirebase(data) {
     try {
-        // *** REPLACE THIS LOGIC WITH REAL FIREBASE RTDB/FIRESTORE SAVE ***
-       
-        // Fallback Save: Save main data and posts separately
-        const postsToSave = data.posts || [];
-        const mainDataToSave = { categories: data.categories, employees: data.employees };
+        if (!window.firebaseDB) {
+            console.error("Firebase DB not initialized. Using temporary fallback (check Console).");
+            localStorage.setItem('TEMP_' + FIREBASE_DATA_KEY, JSON.stringify(data));
+            return;
+        }
         
-        localStorage.setItem(STORAGE_DATA_KEY, JSON.stringify(mainDataToSave));
-        localStorage.setItem(STORAGE_POSTS_KEY, JSON.stringify(postsToSave));
+        // RTDB Logic:
+        const dbRef = ref(window.firebaseDB, FIREBASE_DATA_KEY);
+        await set(dbRef, data);
         
     } catch (e) {
         console.error("Save error:", e);
@@ -483,17 +491,14 @@ async function handleJobPost(e) {
             message = 'जॉब रिक्वेस्ट सफलतापूर्वक अपडेट की गई! (अप्रूवल रीसेट)';
         }
     } else {
-        // NEW POST: isApproved is explicitly set to false
         const newPost = { id: generateId(POST_PREFIX), category, details, contactName, contactNumber, duration, timestamp: Date.now(), isApproved: false };
         posts.push(newPost);
     }
     
-    // Fetch main data (categories, employees) which we don't change here
-    const adminData = await fetchDataFromFirebase(); 
-    // Save ALL data, including the updated posts list
+    const adminData = await fetchDataFromFirebase();
     adminData.posts = posts;
     await saveAllDataToFirebase(adminData);
-    jobPostsList = posts; // Update global list after save
+    jobPostsList = posts; 
     saveTrackedContact(contactNumber); 
     
     const postMsg = document.getElementById('postMessage');
@@ -603,7 +608,6 @@ async function switchSection(targetSectionId){
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
-     // Wait briefly for the Firebase SDK script module to execute
      await new Promise(resolve => setTimeout(resolve, 100)); 
      
      document.getElementById('jobPostForm').addEventListener('submit', handleJobPost);
@@ -616,7 +620,6 @@ document.addEventListener('DOMContentLoaded', async () => {
      
      setupCategorySearch();
      
-     // Initial load
      switchSection('homeSection');
 });
 </script>
