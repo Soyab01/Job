@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>कर्मचारी बुकिंग सेवा - घर पर सेवाएँ</title>
+  <!-- Firebase SDK Imports (MUST BE HERE OR VIA SCRIPT TAGS) -->
+  <script type="module">
+    // Import the functions you need from the SDKs you need
+    import { initializeApp } from "firebase/app";
+    // import { getDatabase, ref, get, set } from "firebase/database"; // <-- UNCOMMENT FOR RTDB
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAhg7hKJ123JRAfio7fymK543XpuNonMHo",
+      authDomain: "showpdf-ffa34.firebaseapp.com",
+      databaseURL: "https://showpdf-ffa34-default-rtdb.firebaseio.com",
+      projectId: "showpdf-ffa34",
+      storageBucket: "showpdf-ffa34.firebasestorage.app",
+      messagingSenderId: "943291456891",
+      appId: "1:943291456891:web:b96e20acd76bd3463b71de",
+      measurementId: "G-T4KNP5ZPP4"
+    };
+
+    // Initialize Firebase
+    window.firebaseApp = initializeApp(firebaseConfig);
+    // window.firebaseDB = getDatabase(window.firebaseApp); // <-- UNCOMMENT FOR RTDB
+  </script>
+
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+  <style>
+    /* (CSS Styles) */
+    body { font-family: 'Poppins', sans-serif; margin: 0; background: #f7f7f9; color: #333; padding-bottom: 60px; }
+    .container { padding: 20px; max-width: 1000px; margin: auto; }
+    h1 { text-align: center; color: #007bff; margin-bottom: 20px; }
+    h2 { color: #007bff; border-bottom: 2px solid #007bff; padding-bottom: 10px; margin-top: 20px; font-weight: 600; }
+    .content-section { display: none; }
+    .content-section.active { display: block; }
+    .search-container { position: relative; margin-bottom: 20px; }
+    #categorySearchInput { width: 100%; padding: 10px 40px 10px 15px; border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box; }
+    .search-icon { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: #007bff; }
+    #categorySuggestions {
+        position: absolute; width: 100%; max-height: 200px; overflow-y: auto; background: #fff; border: 1px solid #ddd;
+        border-radius: 0 0 8px 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); z-index: 50; display: none; top: 100%; 
+    }
+    .suggestion-item { padding: 10px 15px; cursor: pointer; border-bottom: 1px solid #eee; color: #333; }
+    .suggestion-item:last-child { border-bottom: none; }
+    .suggestion-item:hover { background: #e6f7ff; font-weight: 600; }
+    .suggestion-highlight { color: #007bff; font-weight: 700; }
+    .category-navbar { background: #fff; padding: 8px 0; border-bottom: 1px solid #eee; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+    .category-list { display: flex; overflow-x: auto; list-style: none; padding: 0 10px; margin: 0; scrollbar-width: none; }
+    .category-list::-webkit-scrollbar { display: none; }
+    .category-item { flex-shrink: 0; margin-right: 10px; }
+    .category-link { padding: 8px 15px; border-radius: 20px; border: 1px solid #ccc; color: #333; background: #fff; text-decoration: none; display: block; white-space: nowrap; }
+    .category-link.active { background: #007bff; color: #fff; border-color: #007bff; }
+    .karmchari-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px; margin-top: 20px; min-height: 200px; }
+    .karmchari-card { background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 3px 8px rgba(0,0,0,0.1); border-left: 5px solid #007bff; }
+    .category-tag { background: #ffc107; padding: 3px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; display: inline-block; margin-bottom: 5px; }
+    .contact-buttons { display: flex; gap: 10px; margin-top: 10px; }
+    .contact-buttons a { flex: 1; text-align: center; padding: 10px; border-radius: 5px; color: #fff; text-decoration: none; font-weight: 600; }
+    .call-btn { background: #dc3545; }
+    .whatsapp-btn { background: #28a745; }
+    .job-card { background: #e6f7ff; border: 1px solid #cceeff; padding: 15px; border-radius: 8px; margin-bottom: 10px; border-left: 5px solid #007bff; }
+    .job-card p { margin: 5px 0; }
+    .job-card strong { color: #007bff; }
+    .job-card .action-buttons { margin-top: 10px; display: flex; gap: 10px; }
+    .job-card .action-buttons button, .job-card .action-buttons a { padding: 8px 12px; border: none; border-radius: 5px; cursor: pointer; font-weight: 600; flex: 1; }
+    .job-card .edit-btn { background: #ffc107; color: #333; }
+    .job-card .delete-btn { background: #dc3545; color: white; }
+    .form-container { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin-top: 15px; }
+    .form-group-icon { position: relative; margin-bottom: 15px; }
+    .form-group-icon .material-icons { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #007bff; font-size: 20px; pointer-events: none; }
+    .form-group-icon input, .form-group-icon select, textarea {
+        width: 100%; padding: 10px 10px 10px 40px; border-radius: 5px; border: 1px solid #ccc;
+        box-sizing: border-box; transition: border-color 0.3s; 
+    }
+    textarea { padding-left: 10px !important; } 
+    select { -webkit-appearance: none; -moz-appearance: none; appearance: none; padding-right: 10px; }
+    .form-btn { background: #007bff; color: white; padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; width: 100%; margin-top: 10px; font-weight: 600; transition: background 0.3s;}
+    .form-btn:hover { background: #0056b3; }
+    .loading-spinner { 
+        border: 2px solid #f3f3f3; border-top: 2px solid #fff; border-radius: 50%; width: 16px; height: 16px; 
+        animation: spin 0.8s linear infinite; margin-right: 8px; 
+    }
+    @keyframes spin { 
+        0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } 
+    }
+    .message { margin-top: 10px; padding: 8px; border-radius: 4px; font-weight: bold; }
+    .success-msg { color: #155724; background-color: #d4edda; border: 1px solid #c3e6cb; display: none; }
+    .post-status { padding: 3px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; margin-left: 10px; }
+    .status-pending { background: #ffc107; color: #333; }
+    .status-approved { background: #28a745; color: white; }
+    .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; display: flex; justify-content: space-around; background: #fff; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); z-index: 10; }
+    .nav-item-bottom { display: flex; flex-direction: column; align-items: center; padding: 6px 0; font-size: 0.8em; text-decoration: none; color: #777; flex-grow: 1; min-width: 60px; }
+    .nav-item-bottom.active { color: #007bff; font-weight: 600; }
+    .nav-item-bottom span { font-size: 22px; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <!-- 1. 🏠 होम सेक्शन (कर्मचारी) -->
+  <div id="homeSection" class="content-section active">
+    <h1>हमारे अनुभवी सेवा कर्मचारी</h1>
+    <div class="search-container">
+      <input type="text" id="categorySearchInput" placeholder="श्रेणी खोजें...">
+      <span class="material-icons search-icon">search</span>
+      <div id="categorySuggestions"></div>
+    </div>
+    <div class="category-navbar">
+      <ul id="categoryNav" class="category-list">
+        <!-- Categories load here -->
+      </ul>
+    </div>
+    <div id="karmchariGrid" class="karmchari-grid">
+      <p id="loadingMessage" style="text-align:center;">डेटा लोड हो रहा है... (Firebase से)</p>
+    </div>
+  </div>
+
+  <!-- 2. 💼 उपलब्ध काम -->
+  <div id="availableJobsSection" class="content-section">
+    <h1>उपलब्ध काम (<span id="jobPostCount">0</span> एक्टिव पोस्ट)</h1>
+    <div id="availableJobsContainer">
+        <!-- Job posts render here -->
+        <p style="text-align:center;">वर्तमान में कोई काम उपलब्ध नहीं है।</p>
+    </div>
+  </div>
+
+  <!-- 3. 👤 प्रोफ़ाइल (जॉब पोस्ट) -->
+  <div id="profileSection" class="content-section">
+    <h2>जॉब रिक्वेस्ट पोस्ट करें</h2>
+    <p>किसी भी सेवा कर्मचारी की आवश्यकता के लिए यहाँ पोस्ट करें।</p>
+
+    <form id="jobPostForm" class="form-container">
+        <!-- Hidden field to track if we are editing -->
+        <input type="hidden" id="editingPostId" value="">
+        
+        <label for="post_category">आवश्यक कर्मचारी श्रेणी</label>
+        <div class="form-group-icon">
+            <span class="material-icons">category</span>
+            <select id="post_category" required>
+                 <option value="">-- श्रेणी चुनें --</option>
+            </select>
+        </div>
+
+        <label for="post_work_details">कार्य का विवरण</label>
+        <textarea id="post_work_details" rows="3" placeholder="जैसे: मेरे घर में पाइप टूट गया है, इसे तुरंत ठीक करवाना है।" required></textarea>
+
+        <label for="post_contact_name">आपका नाम</label>
+        <div class="form-group-icon">
+            <span class="material-icons">person</span>
+            <input type="text" id="post_contact_name" required>
+        </div>
+
+        <label for="post_contact_number">आपका संपर्क नंबर (WhatsApp/Call)</label>
+        <div class="form-group-icon">
+            <span class="material-icons">phone</span>
+            <input type="text" id="post_contact_number" inputmode="numeric" placeholder="91XXXXXXXXXX" required>
+        </div>
+
+        <label for="post_duration">आवश्यकता का समय/अवधि</label>
+        <div class="form-group-icon">
+            <span class="material-icons">schedule</span>
+            <input type="text" id="post_duration" placeholder="जैसे: 4 घंटे के लिए, आज शाम को" required>
+        </div>
+
+        <button type="submit" class="form-btn" id="submitJobPostBtn">जॉब रिक्वेस्ट पोस्ट करें</button>
+        <p id="postMessage" class="message success-msg">जॉब रिक्वेस्ट सफलतापूर्वक पोस्ट की गई! (एडमिन अप्रूवल का इंतज़ार है)</p>
+    </form>
+    
+    <h2 style="margin-top: 30px;">आपकी पिछली पोस्ट (<span id="myPostCount">0</span>)</h2>
+    <div id="myPostsContainer">
+        <!-- User's previous posts render here -->
+        <p style="text-align: center; color: #555;">आपकी कोई जॉब रिक्वेस्ट पोस्ट नहीं की गई है।</p>
+    </div>
+  </div>
+</div>
+
+<!-- ⚓️ बॉटम नेविगेशन (No 'Join' section) -->
+<div class="bottom-nav">
+  <a href="#" class="nav-item-bottom active" data-section="homeSection">
+    <span class="material-icons">engineering</span> कर्मचारी
+  </a>
+  <a href="#" class="nav-item-bottom" data-section="availableJobsSection">
+    <span class="material-icons">work_outline</span> उपलब्ध काम
+  </a>
+  <a href="#" class="nav-item-bottom" data-section="profileSection">
+    <span class="material-icons">person</span> प्रोफ़ाइल
+  </a>
+</div>
+
+<script>
+// --- Shared Constants ---
+const STORAGE_DATA_KEY = 'serviceApp_data_final_v2'; // For Categories and Employees
+const STORAGE_POSTS_KEY = 'serviceApp_posts_final_v2'; // For Job Posts
+const EMP_PREFIX = 'EMP_';
+const POST_PREFIX = 'POST_';
+
+let currentFilter = 'all';
+let userTrackedContact = localStorage.getItem('user_tracked_contact') || ''; 
+let categoriesList = []; 
+let employeesList = [];
+let jobPostsList = [];
+
+// Seed Categories for initial load
+const SEED_CATEGORIES = [
+    {id:'cat_plumber',name:'प्लंबर'}, {id:'cat_electrician',name:'इलेक्ट्रीशियन'}, 
+    {id:'cat_carpenter',name:'बढ़ई'}, {id:'cat_cleaner',name:'सफाई कर्मचारी'}, 
+    {id:'cat_gardener',name:'माली'}, {id:'cat_painter',name:'पेंटर'},
+    {id:'cat_ac_repair',name:'एसी रिपेयर'}, {id:'cat_cook',name:'खाना बनाने वाला'},
+];
+
+
+function generateId(prefix=''){return prefix+Date.now().toString(36)+Math.random().toString(36).substr(2,5);}
+
+// --- Firebase Placeholder Functions (RTDB Implementation required) ---
+async function fetchDataFromFirebase() {
+    try {
+        // *** REPLACE THIS LOGIC WITH REAL FIREBASE RTDB/FIRESTORE FETCH ***
+        
+        // Fallback Load: Load data and posts separately
+        let data = JSON.parse(localStorage.getItem(STORAGE_DATA_KEY)) || { categories: [], employees: [] };
+        let posts = JSON.parse(localStorage.getItem(STORAGE_POSTS_KEY)) || [];
+
+        // Load seed data if main data is empty 
+        if (!data.categories || data.categories.length === 0) {
+            data.categories = SEED_CATEGORIES;
+            // NOTE: Admin Panel should save this first for consistency.
+        }
+        
+        categoriesList = data.categories || [];
+        employeesList = data.employees || [];
+        jobPostsList = posts || []; 
+
+        return { categories: categoriesList, employees: employeesList, posts: jobPostsList };
+    } catch (e) {
+        console.error("Error fetching data:", e);
+        return { categories: SEED_CATEGORIES, employees: [], posts: [] };
+    }
+}
+
+async function saveAllDataToFirebase(data) {
+    try {
+        // *** REPLACE THIS LOGIC WITH REAL FIREBASE RTDB/FIRESTORE SAVE ***
+       
+        // Fallback Save: Save main data and posts separately
+        const postsToSave = data.posts || [];
+        const mainDataToSave = { categories: data.categories, employees: data.employees };
+        
+        localStorage.setItem(STORAGE_DATA_KEY, JSON.stringify(mainDataToSave));
+        localStorage.setItem(STORAGE_POSTS_KEY, JSON.stringify(postsToSave));
+        
+    } catch (e) {
+        console.error("Save error:", e);
+    }
+}
+
+function saveTrackedContact(contact){
+    userTrackedContact = contact;
+    localStorage.setItem('user_tracked_contact', contact);
+}
+
+function populatePostCategorySelect(categories) {
+    const postSelect = document.getElementById('post_category');
+    if (!postSelect) return; 
+
+    const currentPostVal = postSelect.value; 
+    postSelect.innerHTML = '<option value="">-- श्रेणी चुनें --</option>';
+
+    categories.forEach(cat => {
+        postSelect.appendChild(new Option(cat.name, cat.id));
+    });
+    
+    postSelect.value = currentPostVal; 
+}
+
+function renderCategoryNav(categories){
+    const nav=document.getElementById('categoryNav');nav.innerHTML='';
+    
+    if (categories.length === 0) {
+        nav.innerHTML = '<li class="category-item" style="color:#dc3545; padding: 0 20px;">कोई श्रेणी नहीं मिली।</li>';
+        return;
+    }
+    
+    const all=document.createElement('li');
+    all.className='category-item';
+    all.innerHTML=`<a href="javascript:void(0)" class="category-link ${currentFilter==='all'?'active':''}" data-category-id="all" data-category-name="सभी श्रेणियां">सभी श्रेणियां</a>`;
+    all.querySelector('a').onclick=()=>selectCategory('all', 'सभी श्रेणियां');
+    nav.appendChild(all);
+
+    categories.forEach(c=>{
+        const li=document.createElement('li');
+        li.className='category-item';
+        li.innerHTML=`<a href="javascript:void(0)" class="category-link ${currentFilter===c.id?'active':''}" data-category-id="${c.id}" data-category-name="${c.name}">${c.name}</a>`;
+        li.querySelector('a').onclick=()=>selectCategory(c.id, c.name);
+        nav.appendChild(li);
+    });
+}
+
+function setFilter(id){
+    currentFilter=id;
+    renderEmployees(employeesList, categoriesList, id);
+    
+    const input = document.getElementById('categorySearchInput');
+    const cat = categoriesList.find(c => c.id === id);
+
+    input.value = (id === 'all' || !cat) ? '' : cat.name;
+
+    document.querySelectorAll('.category-link').forEach(l=>{
+        const isActive = l.dataset.categoryId===id;
+        l.classList.toggle('active', isActive);
+        if(isActive) l.parentElement.scrollIntoView({ behavior: 'smooth', inline: 'center' });
+    });
+}
+
+function renderEmployees(employees, categories, filter){
+    const grid=document.getElementById('karmchariGrid');
+    grid.innerHTML='';
+    
+    const categoryMap = categories.reduce((map, cat) => { map[cat.id] = cat.name; return map; }, {});
+    
+    const f=filter==='all'?employees:employees.filter(e=>e.categoryId===filter);
+    
+    if(!f.length){grid.innerHTML='<p style="text-align:center;color:red;">कोई कर्मचारी उपलब्ध नहीं।</p>';return;}
+    
+    f.forEach(e=>{
+        const c=categoryMap[e.categoryId] || 'अज्ञात';
+        const cleanContact = String(e.contact).replace(/\D/g, ''); 
+        const detailsText = e.details ? `\n\nकर्मचारी विवरण:\n${e.details}` : '';
+        const w=`https://wa.me/91${cleanContact}?text=${encodeURIComponent(`नमस्ते, मुझे ${c} की सेवा चाहिए।${detailsText}`)}`;
+        
+        const cardHTML = `
+            <div class="karmchari-card">
+                <div class="category-tag">${c}</div>
+                <h3>${e.name}</h3>
+                <p><strong>अनुभव:</strong> ${e.experience} साल</p>
+                <p style="font-size:0.9em; color:#666;">${(e.details || 'कोई विवरण नहीं।').substring(0, 50) + '...'}</p>
+                <div class="contact-buttons">
+                    <a href="tel:+91${cleanContact}" class="call-btn">कॉल करें</a>
+                    <a href="${w}" target="_blank" class="whatsapp-btn">व्हाट्सएप</a>
+                </div>
+            </div>`;
+        
+        grid.insertAdjacentHTML('beforeend', cardHTML);
+    });
+}
+
+function renderSuggestions(query) {
+    const suggestionsBox = document.getElementById('categorySuggestions');
+    suggestionsBox.innerHTML = '';
+    const lowerQuery = query.toLowerCase().trim();
+
+    if (!lowerQuery) {
+        suggestionsBox.innerHTML += `<div class="suggestion-item" data-category-id="all" data-category-name="सभी श्रेणियां">सभी श्रेणियां</div>`;
+    }
+    
+    const filtered = categoriesList.filter(cat => cat.name.toLowerCase().includes(lowerQuery));
+
+    if (filtered.length === 0 && lowerQuery) {
+        suggestionsBox.style.display = 'none';
+        return;
+    }
+
+    filtered.forEach(cat => {
+        const highlightedName = cat.name.replace(new RegExp(lowerQuery, 'gi'), match => `<span class="suggestion-highlight">${match}</span>`);
+        suggestionsBox.innerHTML += `<div class="suggestion-item" data-category-id="${cat.id}" data-category-name="${cat.name}">${highlightedName}</div>`;
+    });
+
+    suggestionsBox.style.display = 'block';
+
+    suggestionsBox.querySelectorAll('.suggestion-item').forEach(item => {
+        item.addEventListener('mousedown', function() { 
+            selectCategory(this.dataset.categoryId, this.dataset.categoryName);
+        });
+    });
+}
+
+function selectCategory(categoryId, categoryName) {
+    document.getElementById('categorySearchInput').value = categoryName === 'सभी श्रेणियां' ? '' : categoryName; 
+    document.getElementById('categorySuggestions').style.display = 'none'; 
+    setFilter(categoryId); 
+}
+
+function setupCategorySearch() {
+    const input = document.getElementById('categorySearchInput');
+    const suggestionsBox = document.getElementById('categorySuggestions');
+    
+    input.addEventListener('input', () => renderSuggestions(input.value));
+    input.addEventListener('focus', () => renderSuggestions(input.value));
+    input.addEventListener('blur', () => setTimeout(() => { suggestionsBox.style.display = 'none'; }, 150));
+    
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            const firstSuggestion = suggestionsBox.querySelector('.suggestion-item');
+            if (firstSuggestion && suggestionsBox.style.display === 'block') {
+                e.preventDefault();
+                selectCategory(firstSuggestion.dataset.categoryId, firstSuggestion.dataset.categoryName);
+            } else if (input.value.trim() === '') {
+                 setFilter('all');
+            }
+        }
+    });
+}
+
+// --- Available Jobs Renderer (Only shows approved posts) ---
+function renderAvailableJobs(categories) {
+    const container = document.getElementById('availableJobsContainer');
+    const approvedPosts = jobPostsList.filter(p => p.isApproved === true); // FILTER FOR APPROVED
+    document.getElementById('jobPostCount').textContent = approvedPosts.length;
+    container.innerHTML = ''; 
+
+    if (approvedPosts.length === 0) {
+        container.innerHTML = '<p style="text-align:center;">वर्तमान में कोई काम उपलब्ध नहीं है।</p>';
+        return;
+    }
+
+    approvedPosts.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0)); 
+    const categoryMap = categories.reduce((map, cat) => { map[cat.id] = cat.name; return map; }, {});
+
+    approvedPosts.forEach(p => {
+        const catName = categoryMap[p.category] || 'अज्ञात';
+        const cleanContact = String(p.contactNumber).replace(/\D/g, ''); 
+        
+        const whatsappMessage = encodeURIComponent(`नमस्ते, मैंने आपकी जॉब पोस्ट (${catName}) देखी है। मैं यह काम करने में सक्षम हूँ।`);
+        const w = `https://wa.me/91${cleanContact}?text=${whatsappMessage}`;
+
+        container.innerHTML += `
+            <div class="job-card">
+                <p><strong>आवश्यक श्रेणी:</strong> ${catName}</p>
+                <p><strong>कार्य विवरण:</strong> ${p.details}</p>
+                <p><strong>ज़रूरत:</strong> ${p.duration}</p>
+                <p><strong>पोस्ट करने वाला:</strong> ${p.contactName}</p>
+                <div class="action-buttons">
+                    <a href="tel:+91${cleanContact}" class="delete-btn" style="background: #dc3545; color: white; flex: 1; text-align: center; line-height: 20px; text-decoration: none;">कॉल करें</a>
+                    <a href="${w}" target="_blank" class="edit-btn" style="background: #28a745; color: white; flex: 1; text-align: center; line-height: 20px; text-decoration: none;">व्हाट्सएप पर संपर्क करें</a>
+                </div>
+            </div>
+        `;
+    });
+}
+
+function resetJobPostForm(isUpdate=false) {
+    document.getElementById('jobPostForm').reset();
+    if (userTrackedContact) {
+        document.getElementById('post_contact_number').value = userTrackedContact; 
+    }
+    document.getElementById('editingPostId').value = '';
+    const btn = document.getElementById('submitJobPostBtn');
+    btn.textContent = 'जॉब रिक्वेस्ट पोस्ट करें';
+    btn.style.background = '#007bff';
+    populatePostCategorySelect(categoriesList); 
+    if(!isUpdate) document.getElementById('postMessage').style.display = 'none';
+}
+
+async function handleJobPost(e) {
+    e.preventDefault();
+    
+    const id = document.getElementById('editingPostId').value;
+    const category = document.getElementById('post_category').value;
+    const details = document.getElementById('post_work_details').value.trim();
+    const contactName = document.getElementById('post_contact_name').value.trim();
+    const contactNumber = document.getElementById('post_contact_number').value.trim().replace(/\D/g, ''); 
+    const duration = document.getElementById('post_duration').value.trim();
+    
+    const btn = document.getElementById('submitJobPostBtn');
+    const originalText = btn.textContent;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loading-spinner"></span> <span>प्रसंस्करण...</span>';
+
+    if (!category || !details || !contactName || contactNumber.length < 10 || !duration) {
+        alert('कृपया सभी फ़ील्ड सही ढंग से भरें।');
+        btn.disabled = false; btn.innerHTML = originalText;
+        return;
+    }
+    
+    let posts = jobPostsList; 
+    let message = 'जॉब रिक्वेस्ट सफलतापूर्वक पोस्ट की गई! (एडमिन अप्रूवल का इंतज़ार है)';
+
+    if (id) {
+        const index = posts.findIndex(p => p.id === id);
+        if (index !== -1) {
+            posts[index] = { ...posts[index], category, details, contactName, contactNumber, duration, isApproved: false }; // Set to pending on edit
+            message = 'जॉब रिक्वेस्ट सफलतापूर्वक अपडेट की गई! (अप्रूवल रीसेट)';
+        }
+    } else {
+        // NEW POST: isApproved is explicitly set to false
+        const newPost = { id: generateId(POST_PREFIX), category, details, contactName, contactNumber, duration, timestamp: Date.now(), isApproved: false };
+        posts.push(newPost);
+    }
+    
+    // Fetch main data (categories, employees) which we don't change here
+    const adminData = await fetchDataFromFirebase(); 
+    // Save ALL data, including the updated posts list
+    adminData.posts = posts;
+    await saveAllDataToFirebase(adminData);
+    jobPostsList = posts; // Update global list after save
+    saveTrackedContact(contactNumber); 
+    
+    const postMsg = document.getElementById('postMessage');
+    postMsg.textContent = message;
+    postMsg.style.display = 'block';
+    
+    renderMyPosts(categoriesList);
+    resetJobPostForm(true); 
+    
+    btn.disabled = false; btn.innerHTML = originalText;
+    
+    setTimeout(() => { 
+        postMsg.style.display = 'none';
+    }, 3000);
+}
+
+// --- My Posts Renderer (Shows ALL user posts, with status) ---
+function renderMyPosts(categories) { 
+     userTrackedContact = localStorage.getItem('user_tracked_contact') || ''; 
+     const myPosts = jobPostsList.filter(p => p.contactNumber === userTrackedContact); 
+     document.getElementById('myPostCount').textContent = myPosts.length;
+     const container = document.getElementById('myPostsContainer');
+     container.innerHTML = myPosts.length === 0 
+         ? `<p style="text-align: center; color: #555;">आपकी कोई जॉब रिक्वेस्ट पोस्ट नहीं की गई है।</p>`
+         : myPosts.map(p => {
+             const cat = categories.find(c => c.id === p.category);
+             const catName = cat ? cat.name : 'अज्ञात';
+             const statusText = p.isApproved ? 'Approved' : 'Pending';
+             const statusClass = p.isApproved ? 'status-approved' : 'status-pending';
+
+             return `
+                 <div class="job-card" id="my-post-${p.id}">
+                     <p><strong>श्रेणी:</strong> ${catName} <span class="post-status ${statusClass}">${statusText}</span></p>
+                     <p><strong>विवरण:</strong> ${p.details}</p>
+                     <p><strong>आवश्यकता:</strong> ${p.duration}</p>
+                     <div class="action-buttons">
+                         <button class="edit-btn" onclick="editPost('${p.id}')">एडिट करें</button>
+                         <button class="delete-btn" onclick="deletePost('${p.id}')">डिलीट करें</button>
+                     </div>
+                 </div>`;
+         }).join('');
+}
+
+async function deletePost(postId) {
+    if (confirm('क्या आप सच में यह पोस्ट हटाना चाहते हैं?')) {
+        let posts = jobPostsList.filter(p => p.id !== postId);
+        
+        const adminData = await fetchDataFromFirebase();
+        adminData.posts = posts;
+        await saveAllDataToFirebase(adminData);
+        jobPostsList = posts; 
+        
+        renderMyPosts(categoriesList); 
+        renderAvailableJobs(categoriesList);
+        if (document.getElementById('editingPostId').value === postId) {
+            resetJobPostForm();
+        }
+    }
+}
+
+function editPost(postId) {
+    const post = jobPostsList.find(p => p.id === postId);
+    if (!post) return;
+
+    switchSection('profileSection');
+    
+    document.getElementById('editingPostId').value = postId;
+    document.getElementById('post_category').value = post.category;
+    document.getElementById('post_work_details').value = post.details;
+    document.getElementById('post_contact_name').value = post.contactName;
+    document.getElementById('post_contact_number').value = post.contactNumber;
+    document.getElementById('post_duration').value = post.duration;
+
+    const btn = document.getElementById('submitJobPostBtn');
+    btn.textContent = 'पोस्ट अपडेट करें';
+    btn.style.background = '#ffc107'; 
+
+    btn.scrollIntoView({ behavior: 'smooth' });
+}
+
+async function switchSection(targetSectionId){
+    document.querySelectorAll('.nav-item-bottom').forEach(n => n.classList.remove('active'));
+    document.querySelector(`[data-section="${targetSectionId}"]`).classList.add('active');
+    document.querySelectorAll('.content-section').forEach(sec => sec.classList.remove('active'));
+    document.getElementById(targetSectionId).classList.add('active');
+
+    document.getElementById('loadingMessage').style.display = 'block';
+    await fetchDataFromFirebase(); 
+    document.getElementById('loadingMessage').style.display = 'none';
+
+    switch(targetSectionId) {
+        case 'homeSection':
+            renderCategoryNav(categoriesList); 
+            setFilter(currentFilter || 'all'); 
+            break;
+        case 'availableJobsSection':
+            renderAvailableJobs(categoriesList);
+            break;
+        case 'profileSection':
+            populatePostCategorySelect(categoriesList); 
+            renderMyPosts(categoriesList); 
+            resetJobPostForm(); 
+            break;
+    }
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+     // Wait briefly for the Firebase SDK script module to execute
+     await new Promise(resolve => setTimeout(resolve, 100)); 
+     
+     document.getElementById('jobPostForm').addEventListener('submit', handleJobPost);
+     document.querySelectorAll('.bottom-nav .nav-item-bottom').forEach(item => {
+         item.addEventListener('click', (e) => {
+             e.preventDefault();
+             switchSection(e.currentTarget.dataset.section);
+         });
+     });
+     
+     setupCategorySearch();
+     
+     // Initial load
+     switchSection('homeSection');
+});
+</script>
+
+</body>
+</html>
